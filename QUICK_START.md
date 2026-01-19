@@ -66,9 +66,9 @@ To stop the script: Press **Ctrl+C**
 
 You can interpret the values yourself using common benchmarks:
 
-- **Excellent**: < 1% packet loss, < 50ms latency, < 15ms jitter (Perfect for gaming, VoIP, video streaming)
-- **Good**: < 3% packet loss, < 100ms latency, < 30ms jitter (Good for most applications)
-- **Fair**: < 5% packet loss, < 200ms latency, < 50ms jitter (Acceptable, but may have issues with real-time applications)
+- **Excellent**: ≤ 1% packet loss, ≤ 50ms latency, ≤ 15ms jitter (Perfect for gaming, VoIP, video streaming)
+- **Good**: ≤ 3% packet loss, ≤ 100ms latency, ≤ 30ms jitter (Good for most applications)
+- **Fair**: ≤ 5% packet loss, ≤ 200ms latency, ≤ 50ms jitter (Acceptable, but may have issues with real-time applications)
 - **Poor**: ≥ 5% packet loss, ≥ 200ms latency, ≥ 50ms jitter (Bad, likely network problems)
 
 ## Example Output (Both Platforms)
@@ -171,9 +171,9 @@ To stop the script: Press **Ctrl+C**
 
 ### Connection Quality:
 
-- **Excellent**: < 1% packet loss, < 50ms latency, < 15ms jitter (Perfect for gaming, VoIP, video streaming)
-- **Good**: < 3% packet loss, < 100ms latency, < 30ms jitter (Good for most applications)
-- **Fair**: < 5% packet loss, < 200ms latency, < 50ms jitter (Acceptable, but may have issues with real-time applications)
+- **Excellent**: ≤ 1% packet loss, ≤ 50ms latency, ≤ 15ms jitter (Perfect for gaming, VoIP, video streaming)
+- **Good**: ≤ 3% packet loss, ≤ 100ms latency, ≤ 30ms jitter (Good for most applications)
+- **Fair**: ≤ 5% packet loss, ≤ 200ms latency, ≤ 50ms jitter (Acceptable, but may have issues with real-time applications)
 - **Poor**: ≥ 5% packet loss, ≥ 200ms latency, ≥ 50ms jitter (Bad, likely network problems)
 
 ## Example Output (Both Platforms)

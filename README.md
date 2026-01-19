@@ -151,10 +151,10 @@ You can interpret the values yourself using common benchmarks:
 
 | Quality | Packet Loss | Avg Latency | Jitter |
 |---------|-------------|-------------|--------|
-| Excellent | < 1% | < 50 ms | < 15 ms |
-| Good | < 3% | < 100 ms | < 30 ms |
-| Fair | < 5% | < 200 ms | < 50 ms |
-| Poor | ≥ 5% | ≥ 200 ms | ≥ 50 ms |
+| Excellent | ≤ 1% | ≤ 50 ms | ≤ 15 ms |
+| Good | ≤ 3% | ≤ 100 ms | ≤ 30 ms |
+| Fair | ≤ 5% | ≤ 200 ms | ≤ 50 ms |
+| Poor | > 5% | > 200 ms | > 50 ms |
 
 ## Customization
 

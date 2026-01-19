@@ -18,7 +18,7 @@ TARGETS=(
 PING_COUNT=4                    # Number of pings to send
 TCP_TIMEOUT=2                   # TCP connection timeout in seconds
 OUTPUT_FILE="network_measurement_results.csv"
-CONTINUOUS_MODE=false            # Run continuously
+CONTINUOUS_MODE=true            # Run continuously
 TEST_INTERVAL=300               # Interval between test cycles in seconds (5 minutes)
 
 #endregion
