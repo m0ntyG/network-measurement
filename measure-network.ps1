@@ -21,7 +21,7 @@ $TestInterval = 300      # Interval between test cycles in seconds (5 minutes)
 # Connection quality thresholds
 $QualityThresholds = @{
     Excellent = @{PacketLoss = 1; Latency = 50; Jitter = 15}
-    Good = @{PacketLoss = 1; Latency = 100; Jitter = 30}
+    Good = @{PacketLoss = 3; Latency = 100; Jitter = 30}
     Fair = @{PacketLoss = 5; Latency = 200; Jitter = 50}
 }
 #endregion
@@ -38,18 +38,29 @@ function Measure-Latency {
     try {
         $pingResults = Test-Connection -ComputerName $Target -Count $Count -ErrorAction Stop
         
-        $responseTimes = $pingResults | ForEach-Object { $_.ResponseTime }
-        $successCount = ($pingResults | Where-Object { $_.StatusCode -eq 0 }).Count
+        # Filter to only include successful pings for accurate statistics
+        $successfulPings = $pingResults | Where-Object { $_.StatusCode -eq 0 }
+        $responseTimes = $successfulPings | ForEach-Object { $_.ResponseTime }
+        $successCount = $successfulPings.Count
         
-        $avgLatency = ($responseTimes | Measure-Object -Average).Average
-        $minLatency = ($responseTimes | Measure-Object -Minimum).Minimum
-        $maxLatency = ($responseTimes | Measure-Object -Maximum).Maximum
-        
-        # Calculate jitter (average deviation from mean)
-        $jitter = 0
-        if ($responseTimes.Count -gt 1) {
-            $deviations = $responseTimes | ForEach-Object { [Math]::Abs($_ - $avgLatency) }
-            $jitter = ($deviations | Measure-Object -Average).Average
+        if ($successCount -gt 0) {
+            $avgLatency = ($responseTimes | Measure-Object -Average).Average
+            $minLatency = ($responseTimes | Measure-Object -Minimum).Minimum
+            $maxLatency = ($responseTimes | Measure-Object -Maximum).Maximum
+            
+            # Calculate jitter (average deviation from mean)
+            $jitter = 0
+            if ($responseTimes.Count -gt 1) {
+                $deviations = $responseTimes | ForEach-Object { [Math]::Abs($_ - $avgLatency) }
+                $jitter = ($deviations | Measure-Object -Average).Average
+            }
+        }
+        else {
+            # No successful pings
+            $avgLatency = 0
+            $minLatency = 0
+            $maxLatency = 0
+            $jitter = 0
         }
         
         # Calculate packet loss percentage
@@ -153,6 +164,9 @@ function Measure-TcpLatency {
                     # Connection failed
                 }
             }
+            
+            # Explicitly close the wait handle to prevent resource leaks
+            $connect.AsyncWaitHandle.Close()
         }
         catch {
             # Connection attempt failed
@@ -227,6 +241,8 @@ function Test-PortConnectivity {
         $stopwatch.Stop()
         
         if (!$wait) {
+            # Explicitly close the wait handle to prevent resource leaks
+            $connect.AsyncWaitHandle.Close()
             return @{
                 PortOpen = $false
                 ConnectionTime = -1
@@ -235,12 +251,16 @@ function Test-PortConnectivity {
         else {
             try {
                 $tcpClient.EndConnect($connect)
+                # Explicitly close the wait handle to prevent resource leaks
+                $connect.AsyncWaitHandle.Close()
                 return @{
                     PortOpen = $true
                     ConnectionTime = $stopwatch.ElapsedMilliseconds
                 }
             }
             catch {
+                # Explicitly close the wait handle to prevent resource leaks
+                $connect.AsyncWaitHandle.Close()
                 return @{
                     PortOpen = $false
                     ConnectionTime = -1
@@ -271,20 +291,20 @@ function Get-ConnectionQuality {
     
     $thresholds = $script:QualityThresholds
     
-    # Assess quality based on configured thresholds (from worst to best)
-    if ($packetLoss -gt $thresholds.Fair.PacketLoss -or 
-        $avgLatency -gt $thresholds.Fair.Latency -or 
-        $jitter -gt $thresholds.Fair.Jitter) {
+    # Assess quality based on configured thresholds (from worst to best); threshold values are inclusive for the worse tier
+    if ($packetLoss -ge $thresholds.Fair.PacketLoss -or 
+        $avgLatency -ge $thresholds.Fair.Latency -or 
+        $jitter -ge $thresholds.Fair.Jitter) {
         return "Poor"
     }
-    elseif ($packetLoss -gt $thresholds.Good.PacketLoss -or 
-            $avgLatency -gt $thresholds.Good.Latency -or 
-            $jitter -gt $thresholds.Good.Jitter) {
+    elseif ($packetLoss -ge $thresholds.Good.PacketLoss -or 
+            $avgLatency -ge $thresholds.Good.Latency -or 
+            $jitter -ge $thresholds.Good.Jitter) {
         return "Fair"
     }
-    elseif ($packetLoss -gt $thresholds.Excellent.PacketLoss -or
-            $avgLatency -gt $thresholds.Excellent.Latency -or 
-            $jitter -gt $thresholds.Excellent.Jitter) {
+    elseif ($packetLoss -ge $thresholds.Excellent.PacketLoss -or
+            $avgLatency -ge $thresholds.Excellent.Latency -or 
+            $jitter -ge $thresholds.Excellent.Jitter) {
         return "Good"
     }
     else {
@@ -328,6 +348,12 @@ do {
     
     foreach ($target in $Targets) {
         $protocol = if ($target.Protocol) { $target.Protocol.ToUpper() } else { "ICMP" }
+        
+        # Validate protocol
+        if ($protocol -ne "ICMP" -and $protocol -ne "TCP") {
+            Write-Host "Warning: Invalid protocol '$($target.Protocol)' for target '$($target.Name)'. Defaulting to ICMP." -ForegroundColor Yellow
+            $protocol = "ICMP"
+        }
         
         Write-Host "Testing: $($target.Name) ($($target.Host):$($target.Port)) [Protocol: $protocol]" -ForegroundColor Green
         Write-Host ("=" * 60) -ForegroundColor Gray

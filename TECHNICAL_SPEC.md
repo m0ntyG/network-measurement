@@ -49,7 +49,7 @@ This PowerShell script provides comprehensive network performance measurement ca
 - **Measurements**:
   - Port reachability (boolean)
   - TCP connection establishment time
-- **Timeout**: Configurable (default 3000 ms)
+- **Timeout**: Configurable (default 2000 ms)
 - **Unit**: Milliseconds (ms)
 
 ## Connection Quality Assessment
@@ -96,7 +96,7 @@ The script automatically classifies connection quality based on three metrics:
 1. **Initialization**: Load configuration and targets
 2. **For each target**:
    a. DNS resolution (if hostname)
-   b. Latency measurement (10 pings by default)
+   b. Latency measurement (4 pings by default)
    c. Port connectivity test
    d. Quality assessment
    e. Store results in object
@@ -111,6 +111,7 @@ All measurements are exported with the following columns:
 - `TargetName`: User-defined target name
 - `Hostname`: Target hostname or IP
 - `Port`: Tested port number
+- `Protocol`: Protocol used for testing (ICMP or TCP)
 - `ResolvedIP`: IP address (from DNS or original input)
 - `DnsResolutionTime_ms`: DNS lookup time
 - `AvgLatency_ms`: Average round-trip time
@@ -129,16 +130,16 @@ All measurements are exported with the following columns:
 All configuration is at the top of the script for easy access:
 
 ```powershell
-# Target list - each entry requires Name, Host, and Port
+# Target list - each entry requires Name, Host, Port, and Protocol
 $Targets = @(
-    @{Name="Description"; Host="hostname_or_ip"; Port=port_number}
+    @{Name="Description"; Host="hostname_or_ip"; Port=port_number; Protocol="ICMP"}
 )
 
 # Number of ping packets to send per target
-$PingCount = 10
+$PingCount = 4
 
 # TCP connection timeout in milliseconds
-$TcpTimeout = 3000
+$TcpTimeout = 2000
 
 # Output CSV filename
 $OutputFile = "network_measurement_results.csv"
@@ -169,8 +170,8 @@ $QualityThresholds = @{
 ## Performance
 
 Typical execution time:
-- Per target: ~1-3 seconds (with 10 pings)
-- Total for 5 targets: ~10-15 seconds
+- Per target: ~0.5-1.5 seconds (with 4 pings)
+- Total for 5 targets: ~3-8 seconds
 - With slower/unresponsive targets: May take longer (respects timeout values)
 
 ## Error Handling
