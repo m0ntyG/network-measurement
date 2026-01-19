@@ -109,12 +109,32 @@ You can change the number of pings:
 $PingCount = 10          # Anzahl der Pings / Number of pings
 ```
 
+Sie können den TCP-Timeout ändern:
+
+You can change the TCP timeout:
+
+```powershell
+$TcpTimeout = 3000       # TCP timeout in milliseconds
+```
+
 Sie können den Namen der Ausgabedatei ändern:
 
 You can change the output file name:
 
 ```powershell
 $OutputFile = "network_measurement_results.csv"
+```
+
+Sie können die Qualitätsschwellenwerte anpassen:
+
+You can customize the quality thresholds:
+
+```powershell
+$QualityThresholds = @{
+    Excellent = @{PacketLoss = 1; Latency = 50; Jitter = 15}
+    Good = @{PacketLoss = 1; Latency = 100; Jitter = 30}
+    Fair = @{PacketLoss = 5; Latency = 200; Jitter = 50}
+}
 ```
 
 ## Example Output / Beispielausgabe

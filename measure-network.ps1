@@ -13,7 +13,15 @@ $Targets = @(
 
 # Measurement settings
 $PingCount = 10          # Number of pings to send
+$TcpTimeout = 3000       # TCP connection timeout in milliseconds
 $OutputFile = "network_measurement_results.csv"
+
+# Connection quality thresholds
+$QualityThresholds = @{
+    Excellent = @{PacketLoss = 1; Latency = 50; Jitter = 15}
+    Good = @{PacketLoss = 1; Latency = 100; Jitter = 30}
+    Fair = @{PacketLoss = 5; Latency = 200; Jitter = 50}
+}
 #endregion
 
 #region Helper Functions
@@ -74,12 +82,17 @@ function Measure-Latency {
 function Measure-DnsResolution {
     param([string]$Hostname)
     
-    if ($Hostname -match '^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$') {
-        # It's already an IP address
+    # Check if it's an IP address using proper validation
+    try {
+        $null = [System.Net.IPAddress]::Parse($Hostname)
+        # It's a valid IP address
         return @{
             ResolvedIP = $Hostname
             DnsTime = 0
         }
+    }
+    catch {
+        # Not an IP, continue with DNS resolution
     }
     
     Write-Host "  Resolving DNS..." -ForegroundColor Cyan
@@ -109,7 +122,8 @@ function Measure-DnsResolution {
 function Test-PortConnectivity {
     param(
         [string]$Target,
-        [int]$Port
+        [int]$Port,
+        [int]$TimeoutMs = $script:TcpTimeout
     )
     
     Write-Host "  Testing port $Port connectivity..." -ForegroundColor Cyan
@@ -118,7 +132,7 @@ function Test-PortConnectivity {
         $tcpClient = New-Object System.Net.Sockets.TcpClient
         $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
         $connect = $tcpClient.BeginConnect($Target, $Port, $null, $null)
-        $wait = $connect.AsyncWaitHandle.WaitOne(3000, $false)
+        $wait = $connect.AsyncWaitHandle.WaitOne($TimeoutMs, $false)
         $stopwatch.Stop()
         
         if (!$wait) {
@@ -160,14 +174,21 @@ function Get-ConnectionQuality {
     $jitter = $LatencyResult.Jitter
     $packetLoss = $LatencyResult.PacketLoss
     
-    # Simple quality assessment
-    if ($packetLoss -gt 5 -or $avgLatency -gt 200 -or $jitter -gt 50) {
+    $thresholds = $script:QualityThresholds
+    
+    # Assess quality based on configured thresholds
+    if ($packetLoss -gt $thresholds.Fair.PacketLoss -or 
+        $avgLatency -gt $thresholds.Fair.Latency -or 
+        $jitter -gt $thresholds.Fair.Jitter) {
         return "Poor"
     }
-    elseif ($packetLoss -gt 1 -or $avgLatency -gt 100 -or $jitter -gt 30) {
+    elseif ($packetLoss -gt $thresholds.Good.PacketLoss -or 
+            $avgLatency -gt $thresholds.Good.Latency -or 
+            $jitter -gt $thresholds.Good.Jitter) {
         return "Fair"
     }
-    elseif ($avgLatency -gt 50 -or $jitter -gt 15) {
+    elseif ($avgLatency -gt $thresholds.Excellent.Latency -or 
+            $jitter -gt $thresholds.Excellent.Jitter) {
         return "Good"
     }
     else {
