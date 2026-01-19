@@ -18,7 +18,7 @@ TARGETS=(
 PING_COUNT=4                    # Number of pings to send
 TCP_TIMEOUT=2                   # TCP connection timeout in seconds
 OUTPUT_FILE="network_measurement_results.csv"
-CONTINUOUS_MODE=true            # Run continuously
+CONTINUOUS_MODE=false            # Run continuously
 TEST_INTERVAL=300               # Interval between test cycles in seconds (5 minutes)
 
 #endregion
@@ -120,8 +120,8 @@ measure_latency() {
     fi
     
     # Extract statistics
-    local packets_received=$(echo "$ping_output" | grep -oP '\d+(?= received)' || echo "0")
-    local packet_loss=$(echo "$ping_output" | grep -oP '\d+(?=% packet loss)' || echo "100")
+    local packets_received=$(echo "$ping_output" | awk '/received/ {for(i=1;i<=NF;i++) if($(i+1)=="received") print $i}' || echo "0")
+    local packet_loss=$(echo "$ping_output" | awk '/packet loss/ {for(i=1;i<=NF;i++) if($i ~ /%/) {sub(/%/,"",$i); print $i}}' || echo "100")
     
     # MacOS and Linux have different output formats
     if [[ "$OS_TYPE" == "Darwin" ]]; then
@@ -248,7 +248,7 @@ echo ""
 echo -e "${YELLOW}Configuration:${NC}"
 echo -e "${WHITE}  Continuous Mode: $CONTINUOUS_MODE${NC}"
 if [[ "$CONTINUOUS_MODE" == "true" ]]; then
-    local interval_minutes=$(echo "scale=1; $TEST_INTERVAL / 60" | bc)
+    interval_minutes=$(echo "scale=1; $TEST_INTERVAL / 60" | bc)
     echo -e "${WHITE}  Test Interval: $TEST_INTERVAL seconds ($interval_minutes minutes)${NC}"
 fi
 echo -e "${WHITE}  Ping Count: $PING_COUNT${NC}"
@@ -378,8 +378,8 @@ while true; do
     if [[ "$CONTINUOUS_MODE" == "true" ]]; then
         echo ""
         # Calculate next test time in a cross-platform way
-        local current_time=$(date '+%H:%M:%S')
-        local next_time
+        current_time=$(date '+%H:%M:%S')
+        next_time=""
         if [[ "$OS_TYPE" == "Darwin" ]]; then
             # MacOS uses -v for date arithmetic
             next_time=$(date -v +${TEST_INTERVAL}S '+%H:%M:%S' 2>/dev/null || echo "N/A")
