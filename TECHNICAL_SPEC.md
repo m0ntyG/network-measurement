@@ -68,18 +68,16 @@ This specification covers both the PowerShell (Windows) and Bash (MacOS/Linux) i
 - **Timeout**: Configurable (default 2000 ms for Windows, 2 seconds for MacOS/Linux)
 - **Unit**: Milliseconds (ms)
 
-## Connection Quality Assessment
+## Connection Quality Reference
 
-The script automatically classifies connection quality based on three metrics:
+You can interpret the values yourself using common benchmarks:
 
 | Quality   | Packet Loss | Avg Latency | Jitter  | Use Cases |
 |-----------|-------------|-------------|---------|-----------|
 | Excellent | ≤ 1%       | ≤ 50 ms    | ≤ 15 ms | Gaming, VoIP, Video conferencing, Real-time trading |
-| Good      | ≤ 1%       | ≤ 100 ms   | ≤ 30 ms | Web browsing, Video streaming, Remote desktop |
+| Good      | ≤ 3%       | ≤ 100 ms   | ≤ 30 ms | Web browsing, Video streaming, Remote desktop |
 | Fair      | ≤ 5%       | ≤ 200 ms   | ≤ 50 ms | Email, File downloads, General browsing |
 | Poor      | > 5%       | > 200 ms   | > 50 ms | Connection issues, troubleshooting needed |
-
-**Assessment Logic**: Connection is rated by the worst metric (if any metric indicates "Poor", overall quality is "Poor").
 
 ## Technical Implementation
 
@@ -104,10 +102,6 @@ The script automatically classifies connection quality based on three metrics:
 - Waits up to timeout period (configurable)
 - Measures connection establishment time
 - Properly disposes resources using try-finally pattern
-
-#### `Get-ConnectionQuality`
-- Evaluates all metrics against configurable thresholds
-- Returns quality rating (Excellent/Good/Fair/Poor)
 
 ### MacOS / Linux (Bash)
 
@@ -140,10 +134,6 @@ The script automatically classifies connection quality based on three metrics:
 - Measures connection establishment time
 - Returns port status and connection time
 
-##### `get_connection_quality`
-- Evaluates all metrics against configurable thresholds
-- Returns quality rating (Excellent/Good/Fair/Poor)
-
 ### Cross-Platform Differences
 
 | Feature | Windows (PowerShell) | MacOS/Linux (Bash) |
@@ -162,8 +152,7 @@ The script automatically classifies connection quality based on three metrics:
    a. DNS resolution (if hostname)
    b. Latency measurement (4 pings by default)
    c. Port connectivity test
-   d. Quality assessment
-   e. Store results in object
+   d. Store results in object
 3. **Export**: Write all results to CSV
 4. **Display**: Show summary table in console
 
@@ -187,7 +176,6 @@ All measurements are exported with the following columns:
 - `PacketsReceived`: Total packets received
 - `PortOpen`: Port accessibility (True/False)
 - `TcpConnectionTime_ms`: Time to establish TCP connection
-- `ConnectionQuality`: Overall quality rating
 
 ## Configuration Options
 
@@ -209,13 +197,6 @@ $TcpTimeout = 2000
 
 # Output CSV filename
 $OutputFile = "network_measurement_results.csv"
-
-# Quality assessment thresholds
-$QualityThresholds = @{
-    Excellent = @{PacketLoss = 1; Latency = 50; Jitter = 15}
-    Good = @{PacketLoss = 1; Latency = 100; Jitter = 30}
-    Fair = @{PacketLoss = 5; Latency = 200; Jitter = 50}
-}
 ```
 
 ### MacOS / Linux (Bash)
@@ -240,19 +221,6 @@ OUTPUT_FILE="network_measurement_results.csv"
 # Continuous mode settings
 CONTINUOUS_MODE=true
 TEST_INTERVAL=300
-
-# Quality assessment thresholds
-EXCELLENT_PACKET_LOSS=1
-EXCELLENT_LATENCY=50
-EXCELLENT_JITTER=15
-
-GOOD_PACKET_LOSS=3
-GOOD_LATENCY=100
-GOOD_JITTER=30
-
-FAIR_PACKET_LOSS=5
-FAIR_LATENCY=200
-FAIR_JITTER=50
 ```
 
 ## Compatibility

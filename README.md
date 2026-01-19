@@ -16,7 +16,6 @@ A cross-platform script for measuring network performance to multiple targets (U
 - ✅ **Port Connectivity** - Tests port reachability
 - ✅ **Protocol Selection** - Choose between TCP and ICMP per target
 - ✅ **Continuous Monitoring** - Continuous monitoring with configurable interval
-- ✅ **Connection Quality Assessment** - Automatic connection quality assessment
 - ✅ **CSV Export** - Exports results to CSV file (append mode for continuous monitoring)
 - ✅ **Performance Optimized** - Reduced ping count and timeouts for minimal system load
 - ✅ **No Admin Rights Required** - No administrator privileges required
@@ -144,14 +143,15 @@ The script creates a CSV file named `network_measurement_results.csv` in the sam
 - **PacketsReceived** - Number of packets received
 - **PortOpen** - Port reachable (True/False)
 - **TcpConnectionTime_ms** - TCP connection time in ms
-- **ConnectionQuality** - Connection quality (Excellent/Good/Fair/Poor)
 
-## Connection Quality Criteria
+## Connection Quality Reference
+
+You can interpret the values yourself using common benchmarks:
 
 | Quality | Packet Loss | Avg Latency | Jitter |
 |---------|-------------|-------------|--------|
 | Excellent | < 1% | < 50 ms | < 15 ms |
-| Good | < 1% | < 100 ms | < 30 ms |
+| Good | < 3% | < 100 ms | < 30 ms |
 | Fair | < 5% | < 200 ms | < 50 ms |
 | Poor | ≥ 5% | ≥ 200 ms | ≥ 50 ms |
 
@@ -184,16 +184,6 @@ You can change the output file name:
 $OutputFile = "network_measurement_results.csv"
 ```
 
-You can customize the quality thresholds:
-
-```powershell
-$QualityThresholds = @{
-    Excellent = @{PacketLoss = 1; Latency = 50; Jitter = 15}
-    Good = @{PacketLoss = 1; Latency = 100; Jitter = 30}
-    Fair = @{PacketLoss = 5; Latency = 200; Jitter = 50}
-}
-```
-
 ### MacOS / Linux (Bash)
 
 You can change the number of pings:
@@ -219,22 +209,6 @@ You can change the output file name:
 
 ```bash
 OUTPUT_FILE="network_measurement_results.csv"
-```
-
-You can customize the quality thresholds:
-
-```bash
-EXCELLENT_PACKET_LOSS=1
-EXCELLENT_LATENCY=50
-EXCELLENT_JITTER=15
-
-GOOD_PACKET_LOSS=3
-GOOD_LATENCY=100
-GOOD_JITTER=30
-
-FAIR_PACKET_LOSS=5
-FAIR_LATENCY=200
-FAIR_JITTER=50
 ```
 
 ## Protocol Selection
@@ -282,7 +256,6 @@ Testing: Google DNS (8.8.8.8:443) [Protocol: ICMP]
   Packet Loss: 0% (4/4)
   Port 443: Open
   TCP Connection Time: 16 ms
-  Connection Quality: Excellent
 
 Testing: Google (www.google.com:443) [Protocol: TCP]
 ============================================================
@@ -294,13 +267,12 @@ Testing: Google (www.google.com:443) [Protocol: TCP]
   Min/Max Latency: 16 / 24 ms
   Jitter: 2.3 ms
   Packet Loss: 0% (4/4)
-  Connection Quality: Excellent
 
 Summary:
-TargetName    Protocol AvgLatency_ms Jitter_ms PacketLoss_percent ConnectionQuality
-----------    -------- ------------- --------- ------------------ -----------------
-Google DNS    ICMP              15.5       1.2                  0 Excellent
-Google        TCP               18.7       2.3                  0 Excellent
+TargetName    Protocol AvgLatency_ms Jitter_ms PacketLoss_percent
+----------    -------- ------------- --------- ------------------
+Google DNS    ICMP              15.5       1.2                  0
+Google        TCP               18.7       2.3                  0
 
 Next test in 300 seconds (10:30:00 -> 10:35:00)
 Press Ctrl+C to stop continuous monitoring...

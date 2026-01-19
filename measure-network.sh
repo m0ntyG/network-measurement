@@ -21,18 +21,6 @@ OUTPUT_FILE="network_measurement_results.csv"
 CONTINUOUS_MODE=true            # Run continuously
 TEST_INTERVAL=300               # Interval between test cycles in seconds (5 minutes)
 
-# Connection quality thresholds
-EXCELLENT_PACKET_LOSS=1
-EXCELLENT_LATENCY=50
-EXCELLENT_JITTER=15
-
-GOOD_PACKET_LOSS=3
-GOOD_LATENCY=100
-GOOD_JITTER=30
-
-FAIR_PACKET_LOSS=5
-FAIR_LATENCY=200
-FAIR_JITTER=50
 #endregion
 
 # Color codes for output
@@ -237,57 +225,6 @@ test_port_connectivity() {
     fi
 }
 
-# Function to assess connection quality
-get_connection_quality() {
-    local avg_latency="$1"
-    local jitter="$2"
-    local packet_loss="$3"
-    
-    # Convert to comparable format (remove decimals for comparison)
-    local avg_latency_int=$(echo "$avg_latency" | awk '{printf "%.0f", $1}')
-    local jitter_int=$(echo "$jitter" | awk '{printf "%.0f", $1}')
-    local packet_loss_int=$(echo "$packet_loss" | awk '{printf "%.0f", $1}')
-    
-    # Poor quality check
-    if [[ $packet_loss_int -ge $FAIR_PACKET_LOSS ]] || \
-       [[ $avg_latency_int -ge $FAIR_LATENCY ]] || \
-       [[ $jitter_int -ge $FAIR_JITTER ]]; then
-        echo "Poor"
-        return
-    fi
-    
-    # Fair quality check
-    if [[ $packet_loss_int -ge $GOOD_PACKET_LOSS ]] || \
-       [[ $avg_latency_int -ge $GOOD_LATENCY ]] || \
-       [[ $jitter_int -ge $GOOD_JITTER ]]; then
-        echo "Fair"
-        return
-    fi
-    
-    # Good quality check
-    if [[ $packet_loss_int -ge $EXCELLENT_PACKET_LOSS ]] || \
-       [[ $avg_latency_int -ge $EXCELLENT_LATENCY ]] || \
-       [[ $jitter_int -ge $EXCELLENT_JITTER ]]; then
-        echo "Good"
-        return
-    fi
-    
-    # Excellent quality
-    echo "Excellent"
-}
-
-# Function to get quality color
-get_quality_color() {
-    local quality="$1"
-    case "$quality" in
-        "Excellent") echo "$GREEN" ;;
-        "Good") echo "$CYAN" ;;
-        "Fair") echo "$YELLOW" ;;
-        "Poor") echo "$RED" ;;
-        *) echo "$NC" ;;
-    esac
-}
-
 #endregion
 
 #region Main Script
@@ -332,7 +269,7 @@ while true; do
     
     # Add CSV header if file doesn't exist
     if [[ "$csv_exists" == "false" ]]; then
-        echo "Timestamp,TargetName,Hostname,Port,Protocol,ResolvedIP,DnsResolutionTime_ms,AvgLatency_ms,MinLatency_ms,MaxLatency_ms,Jitter_ms,PacketLoss_percent,PacketsSent,PacketsReceived,PortOpen,TcpConnectionTime_ms,ConnectionQuality" > "$OUTPUT_FILE"
+        echo "Timestamp,TargetName,Hostname,Port,Protocol,ResolvedIP,DnsResolutionTime_ms,AvgLatency_ms,MinLatency_ms,MaxLatency_ms,Jitter_ms,PacketLoss_percent,PacketsSent,PacketsReceived,PortOpen,TcpConnectionTime_ms" > "$OUTPUT_FILE"
         csv_exists=true
     fi
     
@@ -397,14 +334,9 @@ while true; do
             fi
         fi
         
-        # Connection Quality Assessment
-        quality=$(get_connection_quality "$avg_latency" "$jitter" "$packet_loss")
-        quality_color=$(get_quality_color "$quality")
-        echo -e "${quality_color}  Connection Quality: $quality${NC}"
-        
         # Store results
         timestamp=$(date '+%Y-%m-%d %H:%M:%S')
-        echo "$timestamp,$name,$host,$port,$protocol,$resolved_ip,$dns_time,$avg_latency,$min_latency,$max_latency,$jitter,$packet_loss,$packets_sent,$packets_received,$port_open,$connection_time,$quality" >> "$temp_results"
+        echo "$timestamp,$name,$host,$port,$protocol,$resolved_ip,$dns_time,$avg_latency,$min_latency,$max_latency,$jitter,$packet_loss,$packets_sent,$packets_received,$port_open,$connection_time" >> "$temp_results"
         
         echo ""
     done
@@ -421,11 +353,11 @@ while true; do
     
     # Display summary table
     echo -e "${GREEN}Summary:${NC}"
-    printf "%-20s %-8s %-13s %-9s %-18s %-17s\n" "TargetName" "Protocol" "AvgLatency_ms" "Jitter_ms" "PacketLoss_percent" "ConnectionQuality"
-    printf "%-20s %-8s %-13s %-9s %-18s %-17s\n" "----------" "--------" "-------------" "---------" "------------------" "-----------------"
+    printf "%-20s %-8s %-13s %-9s %-18s\n" "TargetName" "Protocol" "AvgLatency_ms" "Jitter_ms" "PacketLoss_percent"
+    printf "%-20s %-8s %-13s %-9s %-18s\n" "----------" "--------" "-------------" "---------" "------------------"
     
-    while IFS=',' read -r timestamp name host port protocol resolved_ip dns_time avg_latency min_latency max_latency jitter packet_loss packets_sent packets_received port_open connection_time quality; do
-        printf "%-20s %-8s %-13s %-9s %-18s %-17s\n" "$name" "$protocol" "$avg_latency" "$jitter" "$packet_loss" "$quality"
+    while IFS=',' read -r timestamp name host port protocol resolved_ip dns_time avg_latency min_latency max_latency jitter packet_loss packets_sent packets_received port_open connection_time; do
+        printf "%-20s %-8s %-13s %-9s %-18s\n" "$name" "$protocol" "$avg_latency" "$jitter" "$packet_loss"
     done < "$temp_results"
     
     # Clean up temp file

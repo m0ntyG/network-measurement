@@ -62,12 +62,14 @@ To stop the script: Press **Ctrl+C**
 - **ICMP**: Fast, standard ping, may be blocked by firewalls
 - **TCP**: Tests actual connection to port, works through firewalls
 
-### Connection Quality:
+### Connection Quality Reference:
 
-- **Excellent**: Perfect for gaming, VoIP, video streaming
-- **Good**: Good for most applications
-- **Fair**: Acceptable, but may have issues with real-time applications
-- **Poor**: Bad, likely network problems
+You can interpret the values yourself using common benchmarks:
+
+- **Excellent**: < 1% packet loss, < 50ms latency, < 15ms jitter (Perfect for gaming, VoIP, video streaming)
+- **Good**: < 3% packet loss, < 100ms latency, < 30ms jitter (Good for most applications)
+- **Fair**: < 5% packet loss, < 200ms latency, < 50ms jitter (Acceptable, but may have issues with real-time applications)
+- **Poor**: ≥ 5% packet loss, ≥ 200ms latency, ≥ 50ms jitter (Bad, likely network problems)
 
 ## Example Output (Both Platforms)
 
@@ -88,12 +90,12 @@ Testing: Google DNS (8.8.8.8:443) [Protocol: ICMP]
   Packet Loss: 0% (4/4)
   Port 443: Open
   TCP Connection Time: 16 ms
-  Connection Quality: Excellent
+  
 
 Summary:
-TargetName Protocol AvgLatency_ms Jitter_ms PacketLoss_percent ConnectionQuality
----------- -------- ------------- --------- ------------------ -----------------
-Google DNS ICMP              15.5       1.2                  0 Excellent
+TargetName Protocol AvgLatency_ms Jitter_ms PacketLoss_percent 
+---------- -------- ------------- --------- - 
+Google DNS ICMP              15.5       1.2                  0 
 
 Next test in 300 seconds (10:30:00 -> 10:35:00)
 Press Ctrl+C to stop continuous monitoring...
@@ -169,10 +171,10 @@ To stop the script: Press **Ctrl+C**
 
 ### Connection Quality:
 
-- **Excellent**: Perfect for gaming, VoIP, video streaming
-- **Good**: Good for most applications
-- **Fair**: Acceptable, but may have issues with real-time applications
-- **Poor**: Bad, likely network problems
+- **Excellent**: < 1% packet loss, < 50ms latency, < 15ms jitter (Perfect for gaming, VoIP, video streaming)
+- **Good**: < 3% packet loss, < 100ms latency, < 30ms jitter (Good for most applications)
+- **Fair**: < 5% packet loss, < 200ms latency, < 50ms jitter (Acceptable, but may have issues with real-time applications)
+- **Poor**: ≥ 5% packet loss, ≥ 200ms latency, ≥ 50ms jitter (Bad, likely network problems)
 
 ## Example Output (Both Platforms)
 
@@ -193,12 +195,12 @@ Testing: Google DNS (8.8.8.8:443) [Protocol: ICMP]
   Packet Loss: 0% (4/4)
   Port 443: Open
   TCP Connection Time: 16 ms
-  Connection Quality: Excellent
+  
 
 Summary:
-TargetName Protocol AvgLatency_ms Jitter_ms PacketLoss_percent ConnectionQuality
----------- -------- ------------- --------- ------------------ -----------------
-Google DNS ICMP              15.5       1.2                  0 Excellent
+TargetName Protocol AvgLatency_ms Jitter_ms PacketLoss_percent 
+---------- -------- ------------- --------- - 
+Google DNS ICMP              15.5       1.2                  0 
 
 Next test in 300 seconds (10:30:00 -> 10:35:00)
 Press Ctrl+C to stop continuous monitoring...
