@@ -1,36 +1,32 @@
 # Network Performance Measurement Script
 
-Ein PowerShell-Script für Windows 10/11 zur Messung der Netzwerkperformance zu mehreren Zielen (URLs und IPs).
-
 A PowerShell script for Windows 10/11 to measure network performance to multiple targets (URLs and IPs).
 
-## Features / Funktionen
+## Features
 
-- ✅ **DNS Resolution Time** - DNS-Auflösungszeit (Zeit zur Auflösung des Hostnamens)
-- ✅ **Packet Loss** - Paketverlust messen
-- ✅ **Latency** - Latenz (Durchschnitt, Min, Max)
-- ✅ **Jitter** - Schwankungen in der Latenz
-- ✅ **Port Connectivity** - Port-Erreichbarkeit testen
-- ✅ **Protocol Selection** - Wählbar zwischen TCP und ICMP pro Ziel
-- ✅ **Continuous Monitoring** - Kontinuierliche Überwachung mit konfigurierbarem Intervall
-- ✅ **Connection Quality Assessment** - Automatische Bewertung der Verbindungsqualität
-- ✅ **CSV Export** - Exportiert Ergebnisse in CSV-Datei (append mode für kontinuierliche Überwachung)
-- ✅ **Performance Optimized** - Reduzierte Ping-Anzahl und Timeouts für minimale Systemlast
-- ✅ **No Admin Rights Required** - Keine Administratorrechte erforderlich
-- ✅ **Built-in Windows Tools Only** - Nur integrierte Windows-Tools
-- ✅ **Endpoint Security Friendly** - Verzögerungen zwischen Tests um Sicherheitsrichtlinien zu respektieren
+- ✅ **DNS Resolution Time** - Measures time to resolve hostname to IP address
+- ✅ **Packet Loss** - Measures packet loss percentage
+- ✅ **Latency** - Measures latency (Average, Min, Max)
+- ✅ **Jitter** - Measures latency variations
+- ✅ **Port Connectivity** - Tests port reachability
+- ✅ **Protocol Selection** - Choose between TCP and ICMP per target
+- ✅ **Continuous Monitoring** - Continuous monitoring with configurable interval
+- ✅ **Connection Quality Assessment** - Automatic connection quality assessment
+- ✅ **CSV Export** - Exports results to CSV file (append mode for continuous monitoring)
+- ✅ **Performance Optimized** - Reduced ping count and timeouts for minimal system load
+- ✅ **No Admin Rights Required** - No administrator privileges required
+- ✅ **Built-in Windows Tools Only** - Uses only built-in Windows tools
+- ✅ **Endpoint Security Friendly** - Delays between tests to respect security policies
 
-## Requirements / Voraussetzungen
+## Requirements
 
-- Windows 10 oder Windows 11
-- PowerShell (bereits installiert)
-- Keine Administratorrechte erforderlich
+- Windows 10 or Windows 11
+- PowerShell (already installed)
+- No administrator privileges required
 
-## Usage / Verwendung
+## Usage
 
-### 1. Konfiguration / Configuration
-
-Öffnen Sie die Datei `measure-network.ps1` und bearbeiten Sie die Zielliste am Anfang:
+### 1. Configuration
 
 Open the file `measure-network.ps1` and edit the target list at the beginning:
 
@@ -51,65 +47,57 @@ $ContinuousMode = $true  # Run continuously
 $TestInterval = 300      # Interval between test cycles in seconds (5 minutes)
 ```
 
-Jeder Eintrag benötigt:
-- **Name**: Beschreibender Name für das Ziel
-- **Host**: URL oder IP-Adresse
-- **Port**: Port-Nummer zum Testen
-- **Protocol**: "ICMP" für Ping oder "TCP" für TCP-Verbindungen
-
 Each entry requires:
 - **Name**: Descriptive name for the target
 - **Host**: URL or IP address
 - **Port**: Port number to test
 - **Protocol**: "ICMP" for ping or "TCP" for TCP connections
 
-**Kontinuierlicher Modus / Continuous Mode:**
-- `$ContinuousMode = $true` - Läuft kontinuierlich / Runs continuously
-- `$ContinuousMode = $false` - Einmaliger Durchlauf / Single run
-- `$TestInterval` - Sekunden zwischen Tests / Seconds between tests (300 = 5 Minuten/minutes)
+**Continuous Mode:**
+- `$ContinuousMode = $true` - Runs continuously
+- `$ContinuousMode = $false` - Single run
+- `$TestInterval` - Seconds between tests (300 = 5 minutes)
 
-### 2. Ausführung / Execution
+### 2. Execution
 
-#### PowerShell ausführen / Run PowerShell:
+#### Run PowerShell:
 
 ```powershell
 cd path\to\network-measurement
 .\measure-network.ps1
 ```
 
-Falls Sie eine Fehlermeldung zur Ausführungsrichtlinie erhalten / If you get an execution policy error:
+If you get an execution policy error:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\measure-network.ps1
 ```
 
-### 3. Ergebnisse / Results
-
-Das Script erstellt eine CSV-Datei mit dem Namen `network_measurement_results.csv` im gleichen Verzeichnis.
+### 3. Results
 
 The script creates a CSV file named `network_measurement_results.csv` in the same directory.
 
-#### CSV-Felder / CSV Fields:
+#### CSV Fields:
 
-- **Timestamp** - Zeitstempel der Messung
-- **TargetName** - Name des Ziels
-- **Hostname** - Hostname oder IP
-- **Port** - Getesteter Port
-- **Protocol** - Verwendetes Protokoll (ICMP/TCP)
-- **ResolvedIP** - Aufgelöste IP-Adresse
-- **DnsResolutionTime_ms** - DNS-Auflösungszeit in Millisekunden
-- **AvgLatency_ms** - Durchschnittliche Latenz in ms
-- **MinLatency_ms** - Minimale Latenz in ms
-- **MaxLatency_ms** - Maximale Latenz in ms
+- **Timestamp** - Timestamp of measurement
+- **TargetName** - Target name
+- **Hostname** - Hostname or IP
+- **Port** - Tested port
+- **Protocol** - Protocol used (ICMP/TCP)
+- **ResolvedIP** - Resolved IP address
+- **DnsResolutionTime_ms** - DNS resolution time in milliseconds
+- **AvgLatency_ms** - Average latency in ms
+- **MinLatency_ms** - Minimum latency in ms
+- **MaxLatency_ms** - Maximum latency in ms
 - **Jitter_ms** - Jitter in ms
-- **PacketLoss_percent** - Paketverlust in Prozent
-- **PacketsSent** - Anzahl gesendeter Pakete
-- **PacketsReceived** - Anzahl empfangener Pakete
-- **PortOpen** - Port erreichbar (True/False)
-- **TcpConnectionTime_ms** - TCP-Verbindungszeit in ms
-- **ConnectionQuality** - Verbindungsqualität (Excellent/Good/Fair/Poor)
+- **PacketLoss_percent** - Packet loss in percent
+- **PacketsSent** - Number of packets sent
+- **PacketsReceived** - Number of packets received
+- **PortOpen** - Port reachable (True/False)
+- **TcpConnectionTime_ms** - TCP connection time in ms
+- **ConnectionQuality** - Connection quality (Excellent/Good/Fair/Poor)
 
-## Connection Quality Criteria / Verbindungsqualitätskriterien
+## Connection Quality Criteria
 
 | Quality | Packet Loss | Avg Latency | Jitter |
 |---------|-------------|-------------|--------|
@@ -118,17 +106,13 @@ The script creates a CSV file named `network_measurement_results.csv` in the sam
 | Fair | < 5% | < 200 ms | < 50 ms |
 | Poor | ≥ 5% | ≥ 200 ms | ≥ 50 ms |
 
-## Anpassungen / Customization
-
-Sie können die Anzahl der Pings ändern (reduziert für bessere Performance):
+## Customization
 
 You can change the number of pings (reduced for better performance):
 
 ```powershell
-$PingCount = 4           # Anzahl der Pings / Number of pings
+$PingCount = 4           # Number of pings
 ```
-
-Sie können den TCP-Timeout ändern (reduziert für bessere Performance):
 
 You can change the TCP timeout (reduced for better performance):
 
@@ -136,24 +120,18 @@ You can change the TCP timeout (reduced for better performance):
 $TcpTimeout = 2000       # TCP timeout in milliseconds
 ```
 
-Sie können den kontinuierlichen Modus aktivieren/deaktivieren:
-
 You can enable/disable continuous mode:
 
 ```powershell
-$ContinuousMode = $true  # true für kontinuierlich / true for continuous
-$TestInterval = 300      # Sekunden zwischen Tests / Seconds between tests
+$ContinuousMode = $true  # true for continuous
+$TestInterval = 300      # Seconds between tests
 ```
-
-Sie können den Namen der Ausgabedatei ändern:
 
 You can change the output file name:
 
 ```powershell
 $OutputFile = "network_measurement_results.csv"
 ```
-
-Sie können die Qualitätsschwellenwerte anpassen:
 
 You can customize the quality thresholds:
 
@@ -165,21 +143,21 @@ $QualityThresholds = @{
 }
 ```
 
-## Protocol Selection / Protokollauswahl
+## Protocol Selection
 
 **ICMP (Ping):**
-- Verwendet Standard-ICMP-Echo-Anfragen / Uses standard ICMP echo requests
-- Schneller und weniger ressourcenintensiv / Faster and less resource-intensive
-- Kann von Firewalls blockiert werden / May be blocked by firewalls
-- Gut für allgemeine Netzwerkkonnektivität / Good for general network connectivity
+- Uses standard ICMP echo requests
+- Faster and less resource-intensive
+- May be blocked by firewalls
+- Good for general network connectivity
 
 **TCP:**
-- Misst TCP-Verbindungszeit zum angegebenen Port / Measures TCP connection time to specified port
-- Realistischer für Anwendungslatenzen / More realistic for application latencies
-- Funktioniert durch die meisten Firewalls / Works through most firewalls
-- Etwas langsamer als ICMP / Slightly slower than ICMP
+- Measures TCP connection time to specified port
+- More realistic for application latencies
+- Works through most firewalls
+- Slightly slower than ICMP
 
-## Example Output / Beispielausgabe
+## Example Output
 
 Console:
 ```
@@ -234,35 +212,18 @@ Next test in 300 seconds (10:30:00 -> 10:35:00)
 Press Ctrl+C to stop continuous monitoring...
 ```
 
-## Technical Details / Technische Details
-
-Das Script verwendet folgende integrierte Windows-Tools und APIs:
+## Technical Details
 
 The script uses the following built-in Windows tools and APIs:
 
-- `Test-Connection` - Für ICMP-Pings / For ICMP pings
-- `System.Net.Dns` - Für DNS-Auflösung / For DNS resolution
-- `System.Net.Sockets.TcpClient` - Für Port-Tests und TCP-Latenz / For port testing and TCP latency
-- `Export-Csv` - Für CSV-Export / For CSV export
-
-Alle Messungen erfolgen ohne externe Tools oder Abhängigkeiten.
+- `Test-Connection` - For ICMP pings
+- `System.Net.Dns` - For DNS resolution
+- `System.Net.Sockets.TcpClient` - For port testing and TCP latency
+- `Export-Csv` - For CSV export
 
 All measurements are performed without external tools or dependencies.
 
-### Performance & Security / Performance & Sicherheit
-
-**Performance-Optimierungen:**
-- Reduzierte Ping-Anzahl (4 statt 10) für schnellere Tests
-- Reduzierte Timeouts für effizientere Ressourcennutzung
-- Verzögerungen zwischen TCP-Tests (100ms) um aggressive Scans zu vermeiden
-- Konfigurierbare Testintervalle für kontinuierlichen Betrieb
-
-**Endpoint Security Compliance:**
-- Minimale Netzwerkaktivität pro Test
-- Verzögerungen zwischen Verbindungsversuchen
-- Keine parallelen Verbindungen
-- Respektiert Standard-Timeouts
-- Keine aggressiven Scan-Muster
+### Performance & Security
 
 **Performance Optimizations:**
 - Reduced ping count (4 instead of 10) for faster tests
