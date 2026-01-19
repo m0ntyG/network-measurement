@@ -168,28 +168,16 @@ $QualityThresholds = @{
 ## Protocol Selection / Protokollauswahl
 
 **ICMP (Ping):**
-- Verwendet Standard-ICMP-Echo-Anfragen
-- Schneller und weniger ressourcenintensiv
-- Kann von Firewalls blockiert werden
-- Gut für allgemeine Netzwerkkonnektivität
+- Verwendet Standard-ICMP-Echo-Anfragen / Uses standard ICMP echo requests
+- Schneller und weniger ressourcenintensiv / Faster and less resource-intensive
+- Kann von Firewalls blockiert werden / May be blocked by firewalls
+- Gut für allgemeine Netzwerkkonnektivität / Good for general network connectivity
 
 **TCP:**
-- Misst TCP-Verbindungszeit zum angegebenen Port
-- Realistischer für Anwendungslatenzen
-- Funktioniert durch die meisten Firewalls
-- Etwas langsamer als ICMP
-
-**ICMP (Ping):**
-- Uses standard ICMP echo requests
-- Faster and less resource-intensive
-- May be blocked by firewalls
-- Good for general network connectivity
-
-**TCP:**
-- Measures TCP connection time to specified port
-- More realistic for application latencies
-- Works through most firewalls
-- Slightly slower than ICMP
+- Misst TCP-Verbindungszeit zum angegebenen Port / Measures TCP connection time to specified port
+- Realistischer für Anwendungslatenzen / More realistic for application latencies
+- Funktioniert durch die meisten Firewalls / Works through most firewalls
+- Etwas langsamer als ICMP / Slightly slower than ICMP
 
 ## Example Output / Beispielausgabe
 

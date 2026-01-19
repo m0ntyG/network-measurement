@@ -406,14 +406,14 @@ do {
         Write-Host ""
     }
     
-    # Export to CSV (append mode in continuous operation)
+    # Export to CSV (append mode in continuous operation, overwrite in single-run mode)
     Write-Host "Exporting results to: $OutputFile" -ForegroundColor Green
     if ($csvExists -and $ContinuousMode) {
-        # Append to existing CSV
+        # Append to existing CSV in continuous mode (preserves historical data)
         $results | Export-Csv -Path $OutputFile -NoTypeInformation -Encoding UTF8 -Append
     }
     else {
-        # Create new CSV or overwrite in single-run mode
+        # Create new CSV or overwrite in single-run mode (fresh start each run)
         $results | Export-Csv -Path $OutputFile -NoTypeInformation -Encoding UTF8
         $csvExists = $true
     }
