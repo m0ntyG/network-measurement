@@ -24,8 +24,18 @@
 2. Suchen Sie nach dem Abschnitt mit `$Targets = @(`
 3. Fügen Sie neue Zeilen hinzu oder ändern Sie bestehende:
    ```powershell
-   @{Name="Mein Server"; Host="192.168.1.100"; Port=80},
+   @{Name="Mein Server"; Host="192.168.1.100"; Port=80; Protocol="ICMP"},
+   @{Name="Webserver"; Host="example.com"; Port=443; Protocol="TCP"},
    ```
+
+### Kontinuierlicher Modus:
+
+Das Script läuft standardmäßig kontinuierlich und testet alle 5 Minuten:
+- `$ContinuousMode = $true` - Kontinuierlich laufen lassen
+- `$ContinuousMode = $false` - Nur einmal ausführen
+- `$TestInterval = 300` - Sekunden zwischen Tests (300 = 5 Minuten)
+
+Um das Script zu stoppen: **Ctrl+C** drücken
 
 ### Was wird gemessen?
 
@@ -34,6 +44,12 @@
 - **Packet Loss**: Prozentsatz verlorener Datenpakete
 - **DNS-Zeit**: Zeit zur Auflösung des Hostnamens
 - **Port-Status**: Ob der angegebene Port erreichbar ist
+- **Protokoll**: ICMP (Ping) oder TCP (Verbindungstest)
+
+### Protokollauswahl:
+
+- **ICMP**: Schnell, Standard-Ping, kann von Firewalls blockiert werden
+- **TCP**: Testet tatsächliche Verbindung zum Port, funktioniert durch Firewalls
 
 ### Verbindungsqualität:
 
@@ -68,8 +84,18 @@
 2. Find the section with `$Targets = @(`
 3. Add new lines or modify existing ones:
    ```powershell
-   @{Name="My Server"; Host="192.168.1.100"; Port=80},
+   @{Name="My Server"; Host="192.168.1.100"; Port=80; Protocol="ICMP"},
+   @{Name="Web Server"; Host="example.com"; Port=443; Protocol="TCP"},
    ```
+
+### Continuous Mode:
+
+The script runs continuously by default and tests every 5 minutes:
+- `$ContinuousMode = $true` - Run continuously
+- `$ContinuousMode = $false` - Run once
+- `$TestInterval = 300` - Seconds between tests (300 = 5 minutes)
+
+To stop the script: Press **Ctrl+C**
 
 ### What is measured?
 
@@ -78,6 +104,12 @@
 - **Packet Loss**: Percentage of lost data packets
 - **DNS Time**: Time to resolve the hostname
 - **Port Status**: Whether the specified port is reachable
+- **Protocol**: ICMP (Ping) or TCP (Connection test)
+
+### Protocol Selection:
+
+- **ICMP**: Fast, standard ping, may be blocked by firewalls
+- **TCP**: Tests actual connection to port, works through firewalls
 
 ### Connection Quality:
 
@@ -91,19 +123,31 @@
 ## Beispiel / Example
 
 ```
-Testing: Google DNS (8.8.8.8:443)
+======================================
+  Test Cycle #1 - 2026-01-19 10:30:00
+======================================
+
+Testing: Google DNS (8.8.8.8:443) [Protocol: ICMP]
 ============================================================
   Resolved IP: 8.8.8.8
   DNS Resolution Time: 0 ms
-  Testing connectivity with 10 pings...
+  Protocol: ICMP
+  Testing connectivity with 4 pings...
   Average Latency: 15.5 ms
   Min/Max Latency: 14 / 18 ms
   Jitter: 1.2 ms
-  Packet Loss: 0% (10/10)
-  Testing port 443 connectivity...
+  Packet Loss: 0% (4/4)
   Port 443: Open
   TCP Connection Time: 16 ms
   Connection Quality: Excellent
+
+Summary:
+TargetName Protocol AvgLatency_ms Jitter_ms PacketLoss_percent ConnectionQuality
+---------- -------- ------------- --------- ------------------ -----------------
+Google DNS ICMP              15.5       1.2                  0 Excellent
+
+Next test in 300 seconds (10:30:00 -> 10:35:00)
+Press Ctrl+C to stop continuous monitoring...
 ```
 
 ## Fehlerbehebung / Troubleshooting
