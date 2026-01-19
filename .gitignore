@@ -1,0 +1,9 @@
+# Network measurement output files
+network_measurement_results.csv
+
+# Windows thumbnail cache
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
