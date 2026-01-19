@@ -6,7 +6,7 @@ A PowerShell script for Windows 10/11 to measure network performance to multiple
 
 ## Features / Funktionen
 
-- ✅ **DNS Resolution Latency** - DNS-Auflösungslatenz (Zeit zur Auflösung des Hostnamens)
+- ✅ **DNS Resolution Time** - DNS-Auflösungszeit (Zeit zur Auflösung des Hostnamens)
 - ✅ **Packet Loss** - Paketverlust messen
 - ✅ **Network Latency** - Netzwerklatenz (Durchschnitt, Min, Max)
 - ✅ **Jitter** - Schwankungen in der Latenz

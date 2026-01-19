@@ -43,7 +43,7 @@ Um das Script zu stoppen: **Ctrl+C** drücken
 
 ### Was wird gemessen?
 
-- **DNS-Auflösungslatenz**: Zeit zur Auflösung des Hostnamens in IP-Adresse
+- **DNS-Auflösungszeit**: Zeit zur Auflösung des Hostnamens in IP-Adresse
 - **Netzwerklatenz**: Zeit, die ein Datenpaket für Hin- und Rückweg benötigt
 - **Jitter**: Schwankungen in der Latenz (wichtig für VoIP/Gaming)
 - **Packet Loss**: Prozentsatz verlorener Datenpakete
@@ -107,7 +107,7 @@ To stop the script: Press **Ctrl+C**
 
 ### What is measured?
 
-- **DNS Resolution Latency**: Time to resolve hostname to IP address
+- **DNS Resolution Time**: Time to resolve hostname to IP address
 - **Network Latency**: Time for a data packet to make a round trip
 - **Jitter**: Variations in latency (important for VoIP/gaming)
 - **Packet Loss**: Percentage of lost data packets
