@@ -6,10 +6,10 @@ A PowerShell script for Windows 10/11 to measure network performance to multiple
 
 ## Features / Funktionen
 
+- ✅ **DNS Quality & Latency** - DNS-Qualität und Latenzzeit messen
 - ✅ **Packet Loss** - Paketverlust messen
 - ✅ **Latency** - Latenz (Durchschnitt, Min, Max)
 - ✅ **Jitter** - Schwankungen in der Latenz
-- ✅ **DNS Resolution Time** - DNS-Auflösungszeit
 - ✅ **Port Connectivity** - Port-Erreichbarkeit testen
 - ✅ **Protocol Selection** - Wählbar zwischen TCP und ICMP pro Ziel
 - ✅ **Continuous Monitoring** - Kontinuierliche Überwachung mit konfigurierbarem Intervall
