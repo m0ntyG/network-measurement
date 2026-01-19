@@ -205,7 +205,7 @@ measure_tcp_latency() {
     # Calculate jitter (average deviation)
     local jitter_sum=0
     for time in "${response_times[@]}"; do
-        local deviation=$(echo "scale=2; $time - $avg" | bc | tr -d '-')
+        local deviation=$(echo "$time - ($avg)" | bc | awk '{if ($1 < 0) print -$1; else print $1}')
         jitter_sum=$(echo "scale=2; $jitter_sum + $deviation" | bc)
     done
     local jitter=$(echo "scale=2; $jitter_sum / $success_count" | bc)

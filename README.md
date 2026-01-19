@@ -33,6 +33,7 @@ A cross-platform script for measuring network performance to multiple targets (U
 - MacOS 10.x+ or any modern Linux distribution
 - Bash shell (already installed)
 - Standard Unix tools: `ping`, `dig` or `host`, `date`, `awk`, `sed`, `bc`
+- Python 3 (for MacOS millisecond timestamps - typically pre-installed on MacOS 10.15+)
 - No administrator/root privileges required
 
 ## Usage

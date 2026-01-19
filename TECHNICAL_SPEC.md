@@ -235,6 +235,7 @@ TEST_INTERVAL=300
 - **OS**: MacOS 10.x or later
 - **Shell**: Bash 3.2+ (included with MacOS)
 - **Tools**: `ping`, `dig`/`host`, `timeout`, `date`, `awk`, `sed`, `bc` (all standard)
+- **Python**: Python 3 for millisecond timestamps (pre-installed on MacOS 10.15+, with fallback to second precision)
 - **Privileges**: No root/sudo required
 - **Firewall**: May require ICMP and outbound TCP to be allowed
 

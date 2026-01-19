@@ -93,9 +93,9 @@ Testing: Google DNS (8.8.8.8:443) [Protocol: ICMP]
   
 
 Summary:
-TargetName Protocol AvgLatency_ms Jitter_ms PacketLoss_percent 
----------- -------- ------------- --------- - 
-Google DNS ICMP              15.5       1.2                  0 
+TargetName Protocol AvgLatency_ms Jitter_ms PacketLoss_percent
+---------- -------- ------------- --------- ------------------
+Google DNS ICMP              15.5       1.2                  0
 
 Next test in 300 seconds (10:30:00 -> 10:35:00)
 Press Ctrl+C to stop continuous monitoring...
@@ -198,9 +198,9 @@ Testing: Google DNS (8.8.8.8:443) [Protocol: ICMP]
   
 
 Summary:
-TargetName Protocol AvgLatency_ms Jitter_ms PacketLoss_percent 
----------- -------- ------------- --------- - 
-Google DNS ICMP              15.5       1.2                  0 
+TargetName Protocol AvgLatency_ms Jitter_ms PacketLoss_percent
+---------- -------- ------------- --------- ------------------
+Google DNS ICMP              15.5       1.2                  0
 
 Next test in 300 seconds (10:30:00 -> 10:35:00)
 Press Ctrl+C to stop continuous monitoring...
