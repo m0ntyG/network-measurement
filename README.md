@@ -1,6 +1,11 @@
 # Network Performance Measurement Script
 
-A PowerShell script for Windows 10/11 to measure network performance to multiple targets (URLs and IPs).
+A cross-platform script for measuring network performance to multiple targets (URLs and IPs).
+
+**Available for:**
+- Windows 10/11 (PowerShell script)
+- MacOS (Bash script)
+- Linux (Bash script)
 
 ## Features
 
@@ -11,7 +16,6 @@ A PowerShell script for Windows 10/11 to measure network performance to multiple
 - ✅ **Port Connectivity** - Tests port reachability
 - ✅ **Protocol Selection** - Choose between TCP and ICMP per target
 - ✅ **Continuous Monitoring** - Continuous monitoring with configurable interval
-- ✅ **Connection Quality Assessment** - Automatic connection quality assessment
 - ✅ **CSV Export** - Exports results to CSV file (append mode for continuous monitoring)
 - ✅ **Performance Optimized** - Reduced ping count and timeouts for minimal system load
 - ✅ **No Admin Rights Required** - No administrator privileges required
@@ -20,13 +24,23 @@ A PowerShell script for Windows 10/11 to measure network performance to multiple
 
 ## Requirements
 
+### Windows
 - Windows 10 or Windows 11
 - PowerShell (already installed)
 - No administrator privileges required
 
+### MacOS / Linux
+- MacOS 10.x+ or any modern Linux distribution
+- Bash shell (already installed)
+- Standard Unix tools: `ping`, `dig` or `host`, `date`, `awk`, `sed`, `bc`
+- Python 3 (for MacOS millisecond timestamps - typically pre-installed on MacOS 10.15+)
+- No administrator/root privileges required
+
 ## Usage
 
 ### 1. Configuration
+
+#### Windows (PowerShell)
 
 Open the file `measure-network.ps1` and edit the target list at the beginning:
 
@@ -47,6 +61,27 @@ $ContinuousMode = $true  # Run continuously
 $TestInterval = 300      # Interval between test cycles in seconds (5 minutes)
 ```
 
+#### MacOS / Linux (Bash)
+
+Open the file `measure-network.sh` and edit the target list at the beginning:
+
+```bash
+TARGETS=(
+    "Google DNS|8.8.8.8|443|ICMP"
+    "Cloudflare DNS|1.1.1.1|443|ICMP"
+    "Google|www.google.com|443|TCP"
+    "Microsoft|www.microsoft.com|443|TCP"
+    "GitHub|github.com|443|ICMP"
+)
+
+# Measurement settings
+PING_COUNT=4                    # Number of pings to send
+TCP_TIMEOUT=2                   # TCP connection timeout in seconds
+OUTPUT_FILE="network_measurement_results.csv"
+CONTINUOUS_MODE=true            # Run continuously
+TEST_INTERVAL=300               # Interval between test cycles in seconds (5 minutes)
+```
+
 Each entry requires:
 - **Name**: Descriptive name for the target
 - **Host**: URL or IP address
@@ -60,7 +95,7 @@ Each entry requires:
 
 ### 2. Execution
 
-#### Run PowerShell:
+#### Windows - Run PowerShell Script:
 
 ```powershell
 cd path\to\network-measurement
@@ -71,6 +106,20 @@ If you get an execution policy error:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\measure-network.ps1
+```
+
+#### MacOS / Linux - Run Bash Script:
+
+```bash
+cd /path/to/network-measurement
+chmod +x measure-network.sh
+./measure-network.sh
+```
+
+Or run directly with bash:
+
+```bash
+bash measure-network.sh
 ```
 
 ### 3. Results
@@ -95,18 +144,21 @@ The script creates a CSV file named `network_measurement_results.csv` in the sam
 - **PacketsReceived** - Number of packets received
 - **PortOpen** - Port reachable (True/False)
 - **TcpConnectionTime_ms** - TCP connection time in ms
-- **ConnectionQuality** - Connection quality (Excellent/Good/Fair/Poor)
 
-## Connection Quality Criteria
+## Connection Quality Reference
+
+You can interpret the values yourself using common benchmarks:
 
 | Quality | Packet Loss | Avg Latency | Jitter |
 |---------|-------------|-------------|--------|
-| Excellent | < 1% | < 50 ms | < 15 ms |
-| Good | < 1% | < 100 ms | < 30 ms |
-| Fair | < 5% | < 200 ms | < 50 ms |
-| Poor | ≥ 5% | ≥ 200 ms | ≥ 50 ms |
+| Excellent | ≤ 1% | ≤ 50 ms | ≤ 15 ms |
+| Good | ≤ 3% | ≤ 100 ms | ≤ 30 ms |
+| Fair | ≤ 5% | ≤ 200 ms | ≤ 50 ms |
+| Poor | > 5% | > 200 ms | > 50 ms |
 
 ## Customization
+
+### Windows (PowerShell)
 
 You can change the number of pings (reduced for better performance):
 
@@ -133,14 +185,31 @@ You can change the output file name:
 $OutputFile = "network_measurement_results.csv"
 ```
 
-You can customize the quality thresholds:
+### MacOS / Linux (Bash)
 
-```powershell
-$QualityThresholds = @{
-    Excellent = @{PacketLoss = 1; Latency = 50; Jitter = 15}
-    Good = @{PacketLoss = 1; Latency = 100; Jitter = 30}
-    Fair = @{PacketLoss = 5; Latency = 200; Jitter = 50}
-}
+You can change the number of pings:
+
+```bash
+PING_COUNT=4                    # Number of pings to send
+```
+
+You can change the TCP timeout:
+
+```bash
+TCP_TIMEOUT=2                   # TCP timeout in seconds
+```
+
+You can enable/disable continuous mode:
+
+```bash
+CONTINUOUS_MODE=true            # true for continuous
+TEST_INTERVAL=300               # Seconds between tests
+```
+
+You can change the output file name:
+
+```bash
+OUTPUT_FILE="network_measurement_results.csv"
 ```
 
 ## Protocol Selection
@@ -188,7 +257,6 @@ Testing: Google DNS (8.8.8.8:443) [Protocol: ICMP]
   Packet Loss: 0% (4/4)
   Port 443: Open
   TCP Connection Time: 16 ms
-  Connection Quality: Excellent
 
 Testing: Google (www.google.com:443) [Protocol: TCP]
 ============================================================
@@ -200,13 +268,12 @@ Testing: Google (www.google.com:443) [Protocol: TCP]
   Min/Max Latency: 16 / 24 ms
   Jitter: 2.3 ms
   Packet Loss: 0% (4/4)
-  Connection Quality: Excellent
 
 Summary:
-TargetName    Protocol AvgLatency_ms Jitter_ms PacketLoss_percent ConnectionQuality
-----------    -------- ------------- --------- ------------------ -----------------
-Google DNS    ICMP              15.5       1.2                  0 Excellent
-Google        TCP               18.7       2.3                  0 Excellent
+TargetName    Protocol AvgLatency_ms Jitter_ms PacketLoss_percent
+----------    -------- ------------- --------- ------------------
+Google DNS    ICMP              15.5       1.2                  0
+Google        TCP               18.7       2.3                  0
 
 Next test in 300 seconds (10:30:00 -> 10:35:00)
 Press Ctrl+C to stop continuous monitoring...
@@ -214,12 +281,24 @@ Press Ctrl+C to stop continuous monitoring...
 
 ## Technical Details
 
+### Windows (PowerShell)
+
 The script uses the following built-in Windows tools and APIs:
 
 - `Test-Connection` - For ICMP pings
 - `System.Net.Dns` - For DNS resolution
 - `System.Net.Sockets.TcpClient` - For port testing and TCP latency
 - `Export-Csv` - For CSV export
+
+### MacOS / Linux (Bash)
+
+The script uses the following standard Unix tools:
+
+- `ping` - For ICMP echo requests (compatible with both MacOS and Linux)
+- `dig` or `host` - For DNS resolution timing
+- `/dev/tcp` - For TCP connection testing (Bash built-in)
+- `timeout` - For connection timeouts
+- `date`, `awk`, `sed`, `bc` - For calculations and data processing
 
 All measurements are performed without external tools or dependencies.
 

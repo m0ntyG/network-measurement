@@ -17,13 +17,6 @@ $TcpTimeout = 2000       # TCP connection timeout in milliseconds (reduced for p
 $OutputFile = "network_measurement_results.csv"
 $ContinuousMode = $true  # Run continuously
 $TestInterval = 300      # Interval between test cycles in seconds (5 minutes)
-
-# Connection quality thresholds
-$QualityThresholds = @{
-    Excellent = @{PacketLoss = 1; Latency = 50; Jitter = 15}
-    Good = @{PacketLoss = 3; Latency = 100; Jitter = 30}
-    Fair = @{PacketLoss = 5; Latency = 200; Jitter = 50}
-}
 #endregion
 
 #region Helper Functions
@@ -281,38 +274,6 @@ function Test-PortConnectivity {
         }
     }
 }
-
-function Get-ConnectionQuality {
-    param($LatencyResult)
-    
-    $avgLatency = $LatencyResult.AvgLatency
-    $jitter = $LatencyResult.Jitter
-    $packetLoss = $LatencyResult.PacketLoss
-    
-    $thresholds = $script:QualityThresholds
-    
-    # Assess quality based on configured thresholds (from worst to best)
-    # Values >= threshold are classified into the worse quality tier
-    # Using OR logic: any metric meeting/exceeding a threshold triggers that quality level
-    if ($packetLoss -ge $thresholds.Fair.PacketLoss -or 
-        $avgLatency -ge $thresholds.Fair.Latency -or 
-        $jitter -ge $thresholds.Fair.Jitter) {
-        return "Poor"
-    }
-    elseif ($packetLoss -ge $thresholds.Good.PacketLoss -or 
-            $avgLatency -ge $thresholds.Good.Latency -or 
-            $jitter -ge $thresholds.Good.Jitter) {
-        return "Fair"
-    }
-    elseif ($packetLoss -ge $thresholds.Excellent.PacketLoss -or
-            $avgLatency -ge $thresholds.Excellent.Latency -or 
-            $jitter -ge $thresholds.Excellent.Jitter) {
-        return "Good"
-    }
-    else {
-        return "Excellent"
-    }
-}
 #endregion
 
 #region Main Script
@@ -400,16 +361,6 @@ do {
             }
         }
         
-        # Connection Quality Assessment
-        $quality = Get-ConnectionQuality -LatencyResult $latencyResult
-        $qualityColor = switch ($quality) {
-            "Excellent" { "Green" }
-            "Good" { "Cyan" }
-            "Fair" { "Yellow" }
-            "Poor" { "Red" }
-        }
-        Write-Host "  Connection Quality: $quality" -ForegroundColor $qualityColor
-        
         # Store results
         $results += [PSCustomObject]@{
             Timestamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
@@ -428,7 +379,6 @@ do {
             PacketsReceived = $latencyResult.PacketsReceived
             PortOpen = $portResult.PortOpen
             TcpConnectionTime_ms = $portResult.ConnectionTime
-            ConnectionQuality = $quality
         }
         
         Write-Host ""
@@ -454,7 +404,7 @@ do {
     
     # Display summary table
     Write-Host "Summary:" -ForegroundColor Green
-    $results | Format-Table TargetName, Protocol, AvgLatency_ms, Jitter_ms, PacketLoss_percent, ConnectionQuality -AutoSize
+    $results | Format-Table TargetName, Protocol, AvgLatency_ms, Jitter_ms, PacketLoss_percent -AutoSize
     
     # If continuous mode, wait for next cycle
     if ($ContinuousMode) {
