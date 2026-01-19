@@ -35,6 +35,17 @@ NC='\033[0m' # No Color
 # Detect OS for ping command differences
 OS_TYPE=$(uname -s)
 
+# Function to get milliseconds timestamp (cross-platform)
+get_milliseconds() {
+    if [[ "$OS_TYPE" == "Darwin" ]]; then
+        # MacOS: Use Python for millisecond precision
+        python3 -c 'import time; print(int(time.time() * 1000))' 2>/dev/null || echo $(($(date +%s) * 1000))
+    else
+        # Linux: Use date with milliseconds
+        date +%s%3N
+    fi
+}
+
 #region Helper Functions
 
 # Function to measure DNS resolution time
@@ -53,9 +64,9 @@ measure_dns_resolution() {
     
     # Use dig for DNS resolution timing
     if command -v dig &> /dev/null; then
-        local start_time=$(date +%s%3N)
-        local dig_output=$(dig +short "$hostname" A 2>/dev/null | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' | head -1)
-        local end_time=$(date +%s%3N)
+        local start_time=$(get_milliseconds)
+        local dig_output=$(dig +short "$hostname" A 2>/dev/null | awk '/^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$/ {print; exit}')
+        local end_time=$(get_milliseconds)
         
         if [[ -n "$dig_output" ]]; then
             resolved_ip="$dig_output"
@@ -66,9 +77,9 @@ measure_dns_resolution() {
         fi
     # Fallback to host command
     elif command -v host &> /dev/null; then
-        local start_time=$(date +%s%3N)
+        local start_time=$(get_milliseconds)
         local host_output=$(host "$hostname" 2>/dev/null | grep "has address" | head -1 | awk '{print $NF}')
-        local end_time=$(date +%s%3N)
+        local end_time=$(get_milliseconds)
         
         if [[ -n "$host_output" ]]; then
             resolved_ip="$host_output"
@@ -153,11 +164,11 @@ measure_tcp_latency() {
     local success_count=0
     
     for ((i=0; i<count; i++)); do
-        local start_time=$(date +%s%3N)
+        local start_time=$(get_milliseconds)
         
         # Try TCP connection using timeout and /dev/tcp
         if timeout "$timeout" bash -c "echo >/dev/tcp/$target/$port" 2>/dev/null; then
-            local end_time=$(date +%s%3N)
+            local end_time=$(get_milliseconds)
             local response_time=$((end_time - start_time))
             response_times+=("$response_time")
             ((success_count++))
@@ -212,10 +223,10 @@ test_port_connectivity() {
     
     echo -e "${CYAN}  Testing port $port connectivity...${NC}" >&2
     
-    local start_time=$(date +%s%3N)
+    local start_time=$(get_milliseconds)
     
     if timeout "$timeout" bash -c "echo >/dev/tcp/$target/$port" 2>/dev/null; then
-        local end_time=$(date +%s%3N)
+        local end_time=$(get_milliseconds)
         local connection_time=$((end_time - start_time))
         echo "true|$connection_time"
         return 0
@@ -366,8 +377,16 @@ while true; do
     # If continuous mode, wait for next cycle
     if [[ "$CONTINUOUS_MODE" == "true" ]]; then
         echo ""
-        local next_time=$(date -d "+$TEST_INTERVAL seconds" '+%H:%M:%S' 2>/dev/null || date -v +${TEST_INTERVAL}S '+%H:%M:%S' 2>/dev/null)
+        # Calculate next test time in a cross-platform way
         local current_time=$(date '+%H:%M:%S')
+        local next_time
+        if [[ "$OS_TYPE" == "Darwin" ]]; then
+            # MacOS uses -v for date arithmetic
+            next_time=$(date -v +${TEST_INTERVAL}S '+%H:%M:%S' 2>/dev/null || echo "N/A")
+        else
+            # Linux uses -d for date arithmetic
+            next_time=$(date -d "+$TEST_INTERVAL seconds" '+%H:%M:%S' 2>/dev/null || echo "N/A")
+        fi
         echo -e "${YELLOW}Next test in $TEST_INTERVAL seconds ($current_time -> $next_time)${NC}"
         echo -e "${GRAY}Press Ctrl+C to stop continuous monitoring...${NC}"
         echo ""
