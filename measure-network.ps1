@@ -128,6 +128,7 @@ function Test-PortConnectivity {
     
     Write-Host "  Testing port $Port connectivity..." -ForegroundColor Cyan
     
+    $tcpClient = $null
     try {
         $tcpClient = New-Object System.Net.Sockets.TcpClient
         $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
@@ -136,7 +137,6 @@ function Test-PortConnectivity {
         $stopwatch.Stop()
         
         if (!$wait) {
-            $tcpClient.Close()
             return @{
                 PortOpen = $false
                 ConnectionTime = -1
@@ -145,7 +145,6 @@ function Test-PortConnectivity {
         else {
             try {
                 $tcpClient.EndConnect($connect)
-                $tcpClient.Close()
                 return @{
                     PortOpen = $true
                     ConnectionTime = $stopwatch.ElapsedMilliseconds
@@ -165,6 +164,12 @@ function Test-PortConnectivity {
             ConnectionTime = -1
         }
     }
+    finally {
+        if ($null -ne $tcpClient) {
+            $tcpClient.Close()
+            $tcpClient.Dispose()
+        }
+    }
 }
 
 function Get-ConnectionQuality {
@@ -176,7 +181,7 @@ function Get-ConnectionQuality {
     
     $thresholds = $script:QualityThresholds
     
-    # Assess quality based on configured thresholds
+    # Assess quality based on configured thresholds (from worst to best)
     if ($packetLoss -gt $thresholds.Fair.PacketLoss -or 
         $avgLatency -gt $thresholds.Fair.Latency -or 
         $jitter -gt $thresholds.Fair.Jitter) {
@@ -187,7 +192,8 @@ function Get-ConnectionQuality {
             $jitter -gt $thresholds.Good.Jitter) {
         return "Fair"
     }
-    elseif ($avgLatency -gt $thresholds.Excellent.Latency -or 
+    elseif ($packetLoss -gt $thresholds.Excellent.PacketLoss -or
+            $avgLatency -gt $thresholds.Excellent.Latency -or 
             $jitter -gt $thresholds.Excellent.Jitter) {
         return "Good"
     }
