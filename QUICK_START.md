@@ -4,19 +4,23 @@
 
 ### So führen Sie das Script aus:
 
-1. **Einfachste Methode**: Doppelklick auf `run-measurement.bat`
+1. **Einfachste Methode**: Rechtsklick auf `measure-network.ps1`
+   - "Mit PowerShell ausführen" wählen
    - Das Script wird automatisch ausgeführt
    - Warten Sie, bis alle Tests abgeschlossen sind
    - Die Ergebnisse werden in `network_measurement_results.csv` gespeichert
 
-2. **PowerShell-Methode**:
-   - Rechtsklick auf `measure-network.ps1`
-   - "Mit PowerShell ausführen" wählen
-   - ODER: PowerShell öffnen und eingeben:
+2. **PowerShell Kommandozeile**:
+   - PowerShell öffnen und eingeben:
      ```powershell
      cd Pfad\zum\Ordner
      .\measure-network.ps1
      ```
+   
+3. **Bei Execution Policy Fehler**:
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File .\measure-network.ps1
+   ```
 
 ### Ziele anpassen:
 
@@ -39,10 +43,10 @@ Um das Script zu stoppen: **Ctrl+C** drücken
 
 ### Was wird gemessen?
 
+- **DNS-Qualität und -Latenz**: Zeit zur Auflösung des Hostnamens (DNS Resolution Time)
 - **Latenz**: Zeit, die ein Datenpaket für Hin- und Rückweg benötigt
 - **Jitter**: Schwankungen in der Latenz (wichtig für VoIP/Gaming)
 - **Packet Loss**: Prozentsatz verlorener Datenpakete
-- **DNS-Zeit**: Zeit zur Auflösung des Hostnamens
 - **Port-Status**: Ob der angegebene Port erreichbar ist
 - **Protokoll**: ICMP (Ping) oder TCP (Verbindungstest)
 
@@ -64,19 +68,23 @@ Um das Script zu stoppen: **Ctrl+C** drücken
 
 ### How to run the script:
 
-1. **Easiest method**: Double-click `run-measurement.bat`
+1. **Easiest method**: Right-click on `measure-network.ps1`
+   - Choose "Run with PowerShell"
    - The script will run automatically
    - Wait for all tests to complete
    - Results are saved to `network_measurement_results.csv`
 
-2. **PowerShell method**:
-   - Right-click on `measure-network.ps1`
-   - Choose "Run with PowerShell"
-   - OR: Open PowerShell and type:
+2. **PowerShell command line**:
+   - Open PowerShell and type:
      ```powershell
      cd path\to\folder
      .\measure-network.ps1
      ```
+
+3. **If you get an Execution Policy error**:
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File .\measure-network.ps1
+   ```
 
 ### Customize targets:
 
@@ -99,10 +107,10 @@ To stop the script: Press **Ctrl+C**
 
 ### What is measured?
 
+- **DNS Quality and Latency**: Time to resolve the hostname (DNS Resolution Time)
 - **Latency**: Time for a data packet to make a round trip
 - **Jitter**: Variations in latency (important for VoIP/gaming)
 - **Packet Loss**: Percentage of lost data packets
-- **DNS Time**: Time to resolve the hostname
 - **Port Status**: Whether the specified port is reachable
 - **Protocol**: ICMP (Ping) or TCP (Connection test)
 
@@ -153,7 +161,7 @@ Press Ctrl+C to stop continuous monitoring...
 ## Fehlerbehebung / Troubleshooting
 
 **Problem**: Script kann nicht ausgeführt werden (Execution Policy)
-**Lösung**: Verwenden Sie `run-measurement.bat` oder führen Sie aus:
+**Lösung**: Führen Sie aus:
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\measure-network.ps1
 ```
