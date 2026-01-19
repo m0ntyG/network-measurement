@@ -291,7 +291,9 @@ function Get-ConnectionQuality {
     
     $thresholds = $script:QualityThresholds
     
-    # Assess quality based on configured thresholds (from worst to best); threshold values are inclusive for the worse tier
+    # Assess quality based on configured thresholds (from worst to best)
+    # Values >= threshold are classified into the worse quality tier
+    # Using OR logic: any metric meeting/exceeding a threshold triggers that quality level
     if ($packetLoss -ge $thresholds.Fair.PacketLoss -or 
         $avgLatency -ge $thresholds.Fair.Latency -or 
         $jitter -ge $thresholds.Fair.Jitter) {
