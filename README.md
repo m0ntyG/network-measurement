@@ -1,6 +1,11 @@
 # Network Performance Measurement Script
 
-A PowerShell script for Windows 10/11 to measure network performance to multiple targets (URLs and IPs).
+A cross-platform script for measuring network performance to multiple targets (URLs and IPs).
+
+**Available for:**
+- Windows 10/11 (PowerShell script)
+- MacOS (Bash script)
+- Linux (Bash script)
 
 ## Features
 
@@ -20,13 +25,22 @@ A PowerShell script for Windows 10/11 to measure network performance to multiple
 
 ## Requirements
 
+### Windows
 - Windows 10 or Windows 11
 - PowerShell (already installed)
 - No administrator privileges required
 
+### MacOS / Linux
+- MacOS 10.x+ or any modern Linux distribution
+- Bash shell (already installed)
+- Standard Unix tools: `ping`, `dig` or `host`, `date`, `awk`, `sed`, `bc`
+- No administrator/root privileges required
+
 ## Usage
 
 ### 1. Configuration
+
+#### Windows (PowerShell)
 
 Open the file `measure-network.ps1` and edit the target list at the beginning:
 
@@ -47,6 +61,27 @@ $ContinuousMode = $true  # Run continuously
 $TestInterval = 300      # Interval between test cycles in seconds (5 minutes)
 ```
 
+#### MacOS / Linux (Bash)
+
+Open the file `measure-network.sh` and edit the target list at the beginning:
+
+```bash
+TARGETS=(
+    "Google DNS|8.8.8.8|443|ICMP"
+    "Cloudflare DNS|1.1.1.1|443|ICMP"
+    "Google|www.google.com|443|TCP"
+    "Microsoft|www.microsoft.com|443|TCP"
+    "GitHub|github.com|443|ICMP"
+)
+
+# Measurement settings
+PING_COUNT=4                    # Number of pings to send
+TCP_TIMEOUT=2                   # TCP connection timeout in seconds
+OUTPUT_FILE="network_measurement_results.csv"
+CONTINUOUS_MODE=true            # Run continuously
+TEST_INTERVAL=300               # Interval between test cycles in seconds (5 minutes)
+```
+
 Each entry requires:
 - **Name**: Descriptive name for the target
 - **Host**: URL or IP address
@@ -60,7 +95,7 @@ Each entry requires:
 
 ### 2. Execution
 
-#### Run PowerShell:
+#### Windows - Run PowerShell Script:
 
 ```powershell
 cd path\to\network-measurement
@@ -71,6 +106,20 @@ If you get an execution policy error:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\measure-network.ps1
+```
+
+#### MacOS / Linux - Run Bash Script:
+
+```bash
+cd /path/to/network-measurement
+chmod +x measure-network.sh
+./measure-network.sh
+```
+
+Or run directly with bash:
+
+```bash
+bash measure-network.sh
 ```
 
 ### 3. Results
@@ -108,6 +157,8 @@ The script creates a CSV file named `network_measurement_results.csv` in the sam
 
 ## Customization
 
+### Windows (PowerShell)
+
 You can change the number of pings (reduced for better performance):
 
 ```powershell
@@ -141,6 +192,49 @@ $QualityThresholds = @{
     Good = @{PacketLoss = 1; Latency = 100; Jitter = 30}
     Fair = @{PacketLoss = 5; Latency = 200; Jitter = 50}
 }
+```
+
+### MacOS / Linux (Bash)
+
+You can change the number of pings:
+
+```bash
+PING_COUNT=4                    # Number of pings to send
+```
+
+You can change the TCP timeout:
+
+```bash
+TCP_TIMEOUT=2                   # TCP timeout in seconds
+```
+
+You can enable/disable continuous mode:
+
+```bash
+CONTINUOUS_MODE=true            # true for continuous
+TEST_INTERVAL=300               # Seconds between tests
+```
+
+You can change the output file name:
+
+```bash
+OUTPUT_FILE="network_measurement_results.csv"
+```
+
+You can customize the quality thresholds:
+
+```bash
+EXCELLENT_PACKET_LOSS=1
+EXCELLENT_LATENCY=50
+EXCELLENT_JITTER=15
+
+GOOD_PACKET_LOSS=3
+GOOD_LATENCY=100
+GOOD_JITTER=30
+
+FAIR_PACKET_LOSS=5
+FAIR_LATENCY=200
+FAIR_JITTER=50
 ```
 
 ## Protocol Selection
@@ -214,12 +308,24 @@ Press Ctrl+C to stop continuous monitoring...
 
 ## Technical Details
 
+### Windows (PowerShell)
+
 The script uses the following built-in Windows tools and APIs:
 
 - `Test-Connection` - For ICMP pings
 - `System.Net.Dns` - For DNS resolution
 - `System.Net.Sockets.TcpClient` - For port testing and TCP latency
 - `Export-Csv` - For CSV export
+
+### MacOS / Linux (Bash)
+
+The script uses the following standard Unix tools:
+
+- `ping` - For ICMP echo requests (compatible with both MacOS and Linux)
+- `dig` or `host` - For DNS resolution timing
+- `/dev/tcp` - For TCP connection testing (Bash built-in)
+- `timeout` - For connection timeouts
+- `date`, `awk`, `sed`, `bc` - For calculations and data processing
 
 All measurements are performed without external tools or dependencies.
 
