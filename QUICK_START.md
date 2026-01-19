@@ -43,8 +43,8 @@ Um das Script zu stoppen: **Ctrl+C** drücken
 
 ### Was wird gemessen?
 
-- **DNS-Qualität und -Latenz**: Zeit zur Auflösung des Hostnamens (DNS Resolution Time)
-- **Latenz**: Zeit, die ein Datenpaket für Hin- und Rückweg benötigt
+- **DNS-Auflösungslatenz**: Zeit zur Auflösung des Hostnamens (DNS Resolution Time)
+- **Netzwerklatenz**: Zeit, die ein Datenpaket für Hin- und Rückweg benötigt
 - **Jitter**: Schwankungen in der Latenz (wichtig für VoIP/Gaming)
 - **Packet Loss**: Prozentsatz verlorener Datenpakete
 - **Port-Status**: Ob der angegebene Port erreichbar ist
@@ -107,8 +107,8 @@ To stop the script: Press **Ctrl+C**
 
 ### What is measured?
 
-- **DNS Quality and Latency**: Time to resolve the hostname (DNS Resolution Time)
-- **Latency**: Time for a data packet to make a round trip
+- **DNS Resolution Latency**: Time to resolve the hostname (DNS Resolution Time)
+- **Network Latency**: Time for a data packet to make a round trip
 - **Jitter**: Variations in latency (important for VoIP/gaming)
 - **Packet Loss**: Percentage of lost data packets
 - **Port Status**: Whether the specified port is reachable
