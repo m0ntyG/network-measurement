@@ -404,7 +404,7 @@ do {
     
     # Validate that we have results to export
     if ($null -eq $results -or $results.Count -eq 0) {
-        Write-Host "  Warning: No results to export." -ForegroundColor Yellow
+        Write-Host "  Warning: No results to export. Skipping CSV export." -ForegroundColor Yellow
     }
     elseif ($csvExists -and $ContinuousMode) {
         # Append to existing CSV in continuous mode (preserves historical data)
@@ -425,7 +425,7 @@ do {
                 }
             }
             
-            # Get new data columns
+            # Get new data columns (safe to access since we validated results.Count > 0 above)
             $newColumns = $results[0].PSObject.Properties.Name
             
             # Find columns that exist in CSV but not in new data
@@ -459,10 +459,8 @@ do {
     }
     else {
         # Create new CSV or overwrite in single-run mode (fresh start each run)
-        if ($null -ne $results -and $results.Count -gt 0) {
-            $results | Export-Csv -Path $OutputFile -NoTypeInformation -Encoding UTF8
-            $csvExists = $true
-        }
+        $results | Export-Csv -Path $OutputFile -NoTypeInformation -Encoding UTF8
+        $csvExists = $true
     }
     
     Write-Host ""
