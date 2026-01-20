@@ -165,8 +165,10 @@ test_tcp_connection() {
         if nc -z -w "$timeout_val" "$target" "$port" 2>/dev/null; then
             return 0
         fi
+    fi
+    
     # Method 2: Try /dev/tcp (bash built-in) - works on Linux, sometimes on macOS
-    elif timeout "$timeout_val" bash -c "exec 3<>/dev/tcp/$target/$port 2>/dev/null && exec 3>&-" 2>/dev/null; then
+    if timeout "$timeout_val" bash -c "exec 3<>/dev/tcp/$target/$port 2>/dev/null && exec 3>&-" 2>/dev/null; then
         return 0
     fi
     
