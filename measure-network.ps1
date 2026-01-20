@@ -6,11 +6,11 @@
 $Targets = @(
     # For ICMP: Port=$null (not applicable for ICMP ping)
     # For TCP: Port=number (required for TCP connection testing)
-    @{Name="Google DNS"; Host="8.8.8.8"; Port=$null; Protocol="ICMP"},
-    @{Name="Cloudflare DNS"; Host="1.1.1.1"; Port=$null; Protocol="ICMP"},
-    @{Name="Google"; Host="www.google.com"; Port=443; Protocol="TCP"},
-    @{Name="Microsoft"; Host="www.microsoft.com"; Port=443; Protocol="TCP"},
-    @{Name="GitHub"; Host="github.com"; Port=443; Protocol="TCP"}
+    @{Name = "Google DNS"; Host = "8.8.8.8"; Port = $null; Protocol = "ICMP" },
+    @{Name = "Cloudflare DNS"; Host = "1.1.1.1"; Port = $null; Protocol = "ICMP" },
+    @{Name = "Google"; Host = "www.google.com"; Port = 443; Protocol = "TCP" },
+    @{Name = "Microsoft"; Host = "www.microsoft.com"; Port = 443; Protocol = "TCP" },
+    @{Name = "GitHub"; Host = "github.com"; Port = 443; Protocol = "TCP" }
 )
 
 # Measurement settings
@@ -62,26 +62,26 @@ function Measure-Latency {
         $packetLoss = (($Count - $successCount) / $Count) * 100
         
         return @{
-            Success = $true
-            AvgLatency = [Math]::Round($avgLatency, 2)
-            MinLatency = $minLatency
-            MaxLatency = $maxLatency
-            Jitter = [Math]::Round($jitter, 2)
-            PacketLoss = [Math]::Round($packetLoss, 2)
-            PacketsSent = $Count
+            Success         = $true
+            AvgLatency      = [Math]::Round($avgLatency, 2)
+            MinLatency      = $minLatency
+            MaxLatency      = $maxLatency
+            Jitter          = [Math]::Round($jitter, 2)
+            PacketLoss      = [Math]::Round($packetLoss, 2)
+            PacketsSent     = $Count
             PacketsReceived = $successCount
         }
     }
     catch {
         Write-Host "  Failed to ping $Target" -ForegroundColor Red
         return @{
-            Success = $false
-            AvgLatency = 0
-            MinLatency = 0
-            MaxLatency = 0
-            Jitter = 0
-            PacketLoss = 100
-            PacketsSent = $Count
+            Success         = $false
+            AvgLatency      = 0
+            MinLatency      = 0
+            MaxLatency      = 0
+            Jitter          = 0
+            PacketLoss      = 100
+            PacketsSent     = $Count
             PacketsReceived = 0
         }
     }
@@ -96,7 +96,7 @@ function Measure-DnsResolution {
         # It's a valid IP address
         return @{
             ResolvedIP = $Hostname
-            DnsTime = 0
+            DnsTime    = 0
         }
     }
     catch {
@@ -115,14 +115,14 @@ function Measure-DnsResolution {
         
         return @{
             ResolvedIP = $firstIP
-            DnsTime = $dnsTime
+            DnsTime    = $dnsTime
         }
     }
     catch {
         Write-Host "  DNS resolution failed" -ForegroundColor Red
         return @{
             ResolvedIP = "Failed"
-            DnsTime = -1
+            DnsTime    = -1
         }
     }
 }
@@ -194,25 +194,25 @@ function Measure-TcpLatency {
         $packetLoss = (($Count - $successCount) / $Count) * 100
         
         return @{
-            Success = $true
-            AvgLatency = [Math]::Round($avgLatency, 2)
-            MinLatency = $minLatency
-            MaxLatency = $maxLatency
-            Jitter = [Math]::Round($jitter, 2)
-            PacketLoss = [Math]::Round($packetLoss, 2)
-            PacketsSent = $Count
+            Success         = $true
+            AvgLatency      = [Math]::Round($avgLatency, 2)
+            MinLatency      = $minLatency
+            MaxLatency      = $maxLatency
+            Jitter          = [Math]::Round($jitter, 2)
+            PacketLoss      = [Math]::Round($packetLoss, 2)
+            PacketsSent     = $Count
             PacketsReceived = $successCount
         }
     }
     else {
         return @{
-            Success = $false
-            AvgLatency = 0
-            MinLatency = 0
-            MaxLatency = 0
-            Jitter = 0
-            PacketLoss = 100
-            PacketsSent = $Count
+            Success         = $false
+            AvgLatency      = 0
+            MinLatency      = 0
+            MaxLatency      = 0
+            Jitter          = 0
+            PacketLoss      = 100
+            PacketsSent     = $Count
             PacketsReceived = 0
         }
     }
@@ -239,7 +239,7 @@ function Test-PortConnectivity {
             # Explicitly close the wait handle to prevent resource leaks
             $connect.AsyncWaitHandle.Close()
             return @{
-                PortOpen = $false
+                PortOpen       = $false
                 ConnectionTime = -1
             }
         }
@@ -249,7 +249,7 @@ function Test-PortConnectivity {
                 # Explicitly close the wait handle to prevent resource leaks
                 $connect.AsyncWaitHandle.Close()
                 return @{
-                    PortOpen = $true
+                    PortOpen       = $true
                     ConnectionTime = $stopwatch.ElapsedMilliseconds
                 }
             }
@@ -257,7 +257,7 @@ function Test-PortConnectivity {
                 # Explicitly close the wait handle to prevent resource leaks
                 $connect.AsyncWaitHandle.Close()
                 return @{
-                    PortOpen = $false
+                    PortOpen       = $false
                     ConnectionTime = -1
                 }
             }
@@ -265,7 +265,7 @@ function Test-PortConnectivity {
     }
     catch {
         return @{
-            PortOpen = $false
+            PortOpen       = $false
             ConnectionTime = -1
         }
     }
@@ -364,35 +364,35 @@ do {
         if ($protocol -eq "TCP") {
             # For TCP protocol, port is implicitly tested via latency measurement
             $portResult = @{
-                PortOpen = $latencyResult.Success
+                PortOpen       = $latencyResult.Success
                 ConnectionTime = $latencyResult.AvgLatency
             }
         }
         else {
             # For ICMP protocol, port testing is not applicable
             $portResult = @{
-                PortOpen = "N/A"
+                PortOpen       = "N/A"
                 ConnectionTime = -1
             }
         }
         
         # Store results
         $results += [PSCustomObject]@{
-            Timestamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
-            TargetName = $target.Name
-            Hostname = $target.Host
-            Port = if ($protocol -eq "ICMP") { "N/A" } else { $target.Port }
-            Protocol = $protocol
-            ResolvedIP = $dnsResult.ResolvedIP
+            Timestamp            = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
+            TargetName           = $target.Name
+            Hostname             = $target.Host
+            Port                 = if ($protocol -eq "ICMP") { "N/A" } else { $target.Port }
+            Protocol             = $protocol
+            ResolvedIP           = $dnsResult.ResolvedIP
             DnsResolutionTime_ms = [string]::Format([System.Globalization.CultureInfo]::InvariantCulture, "{0:F0}", $dnsResult.DnsTime)
-            AvgLatency_ms = [string]::Format([System.Globalization.CultureInfo]::InvariantCulture, "{0:F2}", $latencyResult.AvgLatency)
-            MinLatency_ms = [string]::Format([System.Globalization.CultureInfo]::InvariantCulture, "{0:F0}", $latencyResult.MinLatency)
-            MaxLatency_ms = [string]::Format([System.Globalization.CultureInfo]::InvariantCulture, "{0:F0}", $latencyResult.MaxLatency)
-            Jitter_ms = [string]::Format([System.Globalization.CultureInfo]::InvariantCulture, "{0:F2}", $latencyResult.Jitter)
-            PacketLoss_percent = [string]::Format([System.Globalization.CultureInfo]::InvariantCulture, "{0:F2}", $latencyResult.PacketLoss)
-            PacketsSent = $latencyResult.PacketsSent
-            PacketsReceived = $latencyResult.PacketsReceived
-            PortOpen = $portResult.PortOpen
+            AvgLatency_ms        = [string]::Format([System.Globalization.CultureInfo]::InvariantCulture, "{0:F2}", $latencyResult.AvgLatency)
+            MinLatency_ms        = [string]::Format([System.Globalization.CultureInfo]::InvariantCulture, "{0:F0}", $latencyResult.MinLatency)
+            MaxLatency_ms        = [string]::Format([System.Globalization.CultureInfo]::InvariantCulture, "{0:F0}", $latencyResult.MaxLatency)
+            Jitter_ms            = [string]::Format([System.Globalization.CultureInfo]::InvariantCulture, "{0:F2}", $latencyResult.Jitter)
+            PacketLoss_percent   = [string]::Format([System.Globalization.CultureInfo]::InvariantCulture, "{0:F2}", $latencyResult.PacketLoss)
+            PacketsSent          = $latencyResult.PacketsSent
+            PacketsReceived      = $latencyResult.PacketsReceived
+            PortOpen             = $portResult.PortOpen
             TcpConnectionTime_ms = [string]::Format([System.Globalization.CultureInfo]::InvariantCulture, "{0:F0}", $portResult.ConnectionTime)
         }
         
@@ -437,7 +437,7 @@ do {
                     }
                     catch {
                         # Fallback: use simple split if TextFieldParser fails or is unavailable
-                        $existingColumns = $headerLine -replace '"','' -split ','
+                        $existingColumns = $headerLine -replace '"', '' -split ','
                     }
                     finally {
                         # Ensure proper resource cleanup
