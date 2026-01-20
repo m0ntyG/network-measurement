@@ -417,13 +417,10 @@ do {
                 $existingColumns = $existingData[0].PSObject.Properties.Name
             }
             else {
-                # If CSV is empty (only headers), parse it properly to handle quoted values
+                # If CSV is empty (only headers), parse headers manually
                 $headerLine = Get-Content -Path $OutputFile -First 1 -ErrorAction SilentlyContinue
                 if ($null -ne $headerLine -and $headerLine.Length -gt 0) {
-                    # Use ConvertFrom-Csv to properly parse CSV headers with potential quotes
-                    $tempObj = "a,b,c`n1,2,3" | ConvertFrom-Csv
-                    # For a single header line, we need to manually parse or use a temp object
-                    # Since we know our headers don't contain commas, simple split is safe here
+                    # Remove quotes and split by comma (our headers don't contain commas)
                     $existingColumns = $headerLine -replace '"','' -split ','
                 }
             }
