@@ -1,0 +1,8 @@
+Timestamp,TargetName,Hostname,Port,Protocol,ResolvedIP,DnsResolutionTime_ms,AvgLatency_ms,MinLatency_ms,MaxLatency_ms,Jitter_ms,PacketLoss_percent,PacketsSent,PacketsReceived,PortOpen,TcpConnectionTime_ms,ConnectionQuality
+2026-01-19 10:30:00,Google DNS,8.8.8.8,443,ICMP,8.8.8.8,0,15.5,14,18,1.2,0,4,4,True,16,Excellent
+2026-01-19 10:30:05,Cloudflare DNS,1.1.1.1,443,ICMP,1.1.1.1,0,12.3,11,15,1.1,0,4,4,True,13,Excellent
+2026-01-19 10:30:10,Google,www.google.com,443,TCP,142.250.185.68,23,18.7,16,24,2.3,0,4,4,True,18.7,Excellent
+2026-01-19 10:30:15,Microsoft,www.microsoft.com,443,TCP,20.53.203.50,45,35.2,32,42,3.1,0,4,4,True,35.2,Good
+2026-01-19 10:30:20,GitHub,github.com,443,ICMP,140.82.121.4,18,28.9,25,35,2.8,0,4,4,True,30,Good
+2026-01-19 10:35:00,Google DNS,8.8.8.8,443,ICMP,8.8.8.8,0,16.2,14,19,1.5,0,4,4,True,17,Excellent
+2026-01-19 10:35:05,Cloudflare DNS,1.1.1.1,443,ICMP,1.1.1.1,0,11.8,10,14,1.2,0,4,4,True,12,Excellent
