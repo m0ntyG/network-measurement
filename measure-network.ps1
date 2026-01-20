@@ -405,6 +405,12 @@ do {
         # Append to existing CSV in continuous mode (preserves historical data)
         # Read existing CSV to get column names and ensure compatibility
         try {
+            # Validate that we have results to export
+            if ($null -eq $results -or $results.Count -eq 0) {
+                Write-Host "  Warning: No results to export." -ForegroundColor Yellow
+                continue
+            }
+            
             $existingData = Import-Csv -Path $OutputFile -ErrorAction Stop
             $existingColumns = @()
             if ($existingData.Count -gt 0) {
@@ -413,7 +419,10 @@ do {
             }
             else {
                 # If CSV is empty (only headers), read headers directly
-                $existingColumns = (Get-Content -Path $OutputFile -First 1).Split(',')
+                $headerLine = Get-Content -Path $OutputFile -First 1 -ErrorAction SilentlyContinue
+                if ($null -ne $headerLine -and $headerLine.Length -gt 0) {
+                    $existingColumns = $headerLine.Split(',')
+                }
             }
             
             # Get new data columns
