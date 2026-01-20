@@ -6,7 +6,7 @@
 #region Configuration - Edit targets here
 # Target configuration: Name|Host|Port|Protocol
 # Protocol can be ICMP or TCP
-# For ICMP: Port can be empty or set to "N/A" (not used for ICMP ping)
+# For ICMP: Port field should be left empty (not used for ICMP ping; do not use the string "N/A" here)
 # For TCP: Port is required and used for TCP connection testing
 TARGETS=(
     "Google DNS|8.8.8.8||ICMP"
@@ -295,6 +295,13 @@ while true; do
         if [[ "$protocol" != "ICMP" && "$protocol" != "TCP" ]]; then
             echo -e "${YELLOW}Warning: Invalid protocol '$protocol' for target '$name'. Defaulting to ICMP.${NC}"
             protocol="ICMP"
+        fi
+        
+        # Validate TCP targets have a port
+        if [[ "$protocol" == "TCP" && -z "$port" ]]; then
+            echo -e "${RED}Error: TCP protocol requires a port number for target '$name'. Skipping.${NC}"
+            echo ""
+            continue
         fi
         
         # Display target info (with or without port depending on protocol)

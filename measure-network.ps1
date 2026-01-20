@@ -320,6 +320,13 @@ do {
             $protocol = "ICMP"
         }
         
+        # Validate TCP targets have a port
+        if ($protocol -eq "TCP" -and ($null -eq $target.Port -or $target.Port -eq "")) {
+            Write-Host "Error: TCP protocol requires a port number for target '$($target.Name)'. Skipping." -ForegroundColor Red
+            Write-Host ""
+            continue
+        }
+        
         # Display target info (with or without port depending on protocol)
         if ($protocol -eq "ICMP") {
             Write-Host "Testing: $($target.Name) ($($target.Host)) [Protocol: $protocol]" -ForegroundColor Green
