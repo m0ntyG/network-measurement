@@ -153,6 +153,26 @@ measure_latency() {
     echo "$avg_latency|$min_latency|$max_latency|$jitter|$packet_loss|$count|$packets_received"
 }
 
+# Function to test TCP connection (helper for TCP latency measurement)
+test_tcp_connection() {
+    local target="$1"
+    local port="$2"
+    local timeout_val="$3"
+    
+    # Try multiple methods for TCP connection testing
+    # Method 1: Try nc (netcat) if available - most reliable
+    if command -v nc &> /dev/null; then
+        if nc -z -w "$timeout_val" "$target" "$port" 2>/dev/null; then
+            return 0
+        fi
+    # Method 2: Try /dev/tcp (bash built-in) - works on Linux, sometimes on macOS
+    elif timeout "$timeout_val" bash -c "exec 3<>/dev/tcp/$target/$port 2>/dev/null && exec 3>&-" 2>/dev/null; then
+        return 0
+    fi
+    
+    return 1
+}
+
 # Function to measure TCP latency
 measure_tcp_latency() {
     local target="$1"
@@ -168,8 +188,8 @@ measure_tcp_latency() {
     for ((i=0; i<count; i++)); do
         local start_time=$(get_milliseconds)
         
-        # Try TCP connection using timeout and /dev/tcp
-        if timeout "$timeout" bash -c "echo >/dev/tcp/$target/$port" 2>/dev/null; then
+        # Try TCP connection using our helper function
+        if test_tcp_connection "$target" "$port" "$timeout"; then
             local end_time=$(get_milliseconds)
             local response_time=$((end_time - start_time))
             response_times+=("$response_time")
@@ -227,7 +247,8 @@ test_port_connectivity() {
     
     local start_time=$(get_milliseconds)
     
-    if timeout "$timeout" bash -c "echo >/dev/tcp/$target/$port" 2>/dev/null; then
+    # Use the improved TCP connection test
+    if test_tcp_connection "$target" "$port" "$timeout"; then
         local end_time=$(get_milliseconds)
         local connection_time=$((end_time - start_time))
         echo "true|$connection_time"

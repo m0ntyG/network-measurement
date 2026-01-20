@@ -403,7 +403,50 @@ do {
     Write-Host "Exporting results to: $OutputFile" -ForegroundColor Green
     if ($csvExists -and $ContinuousMode) {
         # Append to existing CSV in continuous mode (preserves historical data)
-        $results | Export-Csv -Path $OutputFile -NoTypeInformation -Encoding UTF8 -Append
+        # Read existing CSV to get column names and ensure compatibility
+        try {
+            $existingData = Import-Csv -Path $OutputFile -ErrorAction Stop
+            $existingColumns = @()
+            if ($existingData.Count -gt 0) {
+                # Get all property names from the first row
+                $existingColumns = $existingData[0].PSObject.Properties.Name
+            }
+            else {
+                # If CSV is empty (only headers), read headers directly
+                $existingColumns = (Get-Content -Path $OutputFile -First 1).Split(',')
+            }
+            
+            # Get new data columns
+            $newColumns = $results[0].PSObject.Properties.Name
+            
+            # Find columns that exist in CSV but not in new data
+            $missingColumns = $existingColumns | Where-Object { $_ -notin $newColumns }
+            
+            # Add missing columns to new results with empty/default values
+            if ($missingColumns.Count -gt 0) {
+                foreach ($result in $results) {
+                    foreach ($column in $missingColumns) {
+                        $result | Add-Member -MemberType NoteProperty -Name $column -Value "" -Force
+                    }
+                }
+            }
+            
+            # Find columns in new data that don't exist in CSV (and remove them to maintain consistency)
+            $extraColumns = $newColumns | Where-Object { $_ -notin $existingColumns }
+            
+            # Reorder properties to match existing CSV column order, then append extra columns
+            if ($existingColumns.Count -gt 0) {
+                $orderedResults = $results | Select-Object -Property ($existingColumns + $extraColumns)
+                $orderedResults | Export-Csv -Path $OutputFile -NoTypeInformation -Encoding UTF8 -Append
+            }
+            else {
+                $results | Export-Csv -Path $OutputFile -NoTypeInformation -Encoding UTF8 -Append
+            }
+        }
+        catch {
+            Write-Host "  Warning: Could not read existing CSV structure. Creating new file." -ForegroundColor Yellow
+            $results | Export-Csv -Path $OutputFile -NoTypeInformation -Encoding UTF8
+        }
     }
     else {
         # Create new CSV or overwrite in single-run mode (fresh start each run)
