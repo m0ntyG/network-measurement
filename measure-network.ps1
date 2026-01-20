@@ -87,6 +87,84 @@ function Measure-Latency {
     }
 }
 
+function Measure-TcpLatency {
+    param(
+        [string]$Target,
+        [int]$Port,
+        [int]$Count,
+        [int]$TimeoutMs = $script:TcpTimeout
+    )
+    
+    Write-Host "  Testing TCP connectivity to port $Port with $Count attempts..." -ForegroundColor Cyan
+    
+    $responseTimes = @()
+    $successCount = 0
+    
+    for ($i = 0; $i -lt $Count; $i++) {
+        try {
+            $tcpClient = New-Object System.Net.Sockets.TcpClient
+            $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+            $connect = $tcpClient.BeginConnect($Target, $Port, $null, $null)
+            $wait = $connect.AsyncWaitHandle.WaitOne($TimeoutMs, $false)
+            $stopwatch.Stop()
+            
+            if ($wait) {
+                $tcpClient.EndConnect($connect)
+                $responseTimes += $stopwatch.ElapsedMilliseconds
+                $successCount++
+            }
+            $connect.AsyncWaitHandle.Close()
+            $tcpClient.Close()
+            $tcpClient.Dispose()
+        }
+        catch {
+            # Connection failed
+        }
+        
+        # Small delay between attempts
+        if ($i -lt ($Count - 1)) {
+            Start-Sleep -Milliseconds 100
+        }
+    }
+    
+    if ($successCount -eq 0) {
+        return @{
+            Success         = $false
+            AvgLatency      = 0
+            MinLatency      = 0
+            MaxLatency      = 0
+            Jitter          = 0
+            PacketLoss      = 100
+            PacketsSent     = $Count
+            PacketsReceived = 0
+        }
+    }
+    
+    $avgLatency = ($responseTimes | Measure-Object -Average).Average
+    $minLatency = ($responseTimes | Measure-Object -Minimum).Minimum
+    $maxLatency = ($responseTimes | Measure-Object -Maximum).Maximum
+    
+    # Calculate jitter (average deviation from mean)
+    $jitter = 0
+    if ($responseTimes.Count -gt 1) {
+        $deviations = $responseTimes | ForEach-Object { [Math]::Abs($_ - $avgLatency) }
+        $jitter = ($deviations | Measure-Object -Average).Average
+    }
+    
+    $packetLoss = (($Count - $successCount) / $Count) * 100
+    
+    return @{
+        Success         = $true
+        AvgLatency      = [Math]::Round($avgLatency, 2)
+        MinLatency      = [Math]::Round($minLatency, 2)
+        MaxLatency      = [Math]::Round($maxLatency, 2)
+        Jitter          = [Math]::Round($jitter, 2)
+        PacketLoss      = [Math]::Round($packetLoss, 2)
+        PacketsSent     = $Count
+        PacketsReceived = $successCount
+    }
+}
+
 function Measure-DnsResolution {
     param([string]$Hostname)
     
