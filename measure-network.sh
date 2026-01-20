@@ -340,16 +340,17 @@ while true; do
                 port_open="false"
                 connection_time="-1"
             fi
+            csv_port="$port"
         else
             # For ICMP protocol, port testing is not applicable
             port_open="N/A"
             connection_time="-1"
-            port="N/A"
+            csv_port="N/A"
         fi
         
         # Store results
         timestamp=$(date '+%Y-%m-%d %H:%M:%S')
-        echo "$timestamp,$name,$host,$port,$protocol,$resolved_ip,$dns_time,$avg_latency,$min_latency,$max_latency,$jitter,$packet_loss,$packets_sent,$packets_received,$port_open,$connection_time" >> "$temp_results"
+        echo "$timestamp,$name,$host,$csv_port,$protocol,$resolved_ip,$dns_time,$avg_latency,$min_latency,$max_latency,$jitter,$packet_loss,$packets_sent,$packets_received,$port_open,$connection_time" >> "$temp_results"
         
         echo ""
     done

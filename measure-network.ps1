@@ -4,6 +4,8 @@
 
 #region Configuration - Edit targets here
 $Targets = @(
+    # For ICMP: Port=$null (not applicable for ICMP ping)
+    # For TCP: Port=number (required for TCP connection testing)
     @{Name="Google DNS"; Host="8.8.8.8"; Port=$null; Protocol="ICMP"},
     @{Name="Cloudflare DNS"; Host="1.1.1.1"; Port=$null; Protocol="ICMP"},
     @{Name="Google"; Host="www.google.com"; Port=443; Protocol="TCP"},
