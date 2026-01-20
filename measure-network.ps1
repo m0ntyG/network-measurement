@@ -401,16 +401,15 @@ do {
     
     # Export to CSV (append mode in continuous operation, overwrite in single-run mode)
     Write-Host "Exporting results to: $OutputFile" -ForegroundColor Green
-    if ($csvExists -and $ContinuousMode) {
+    
+    # Validate that we have results to export
+    if ($null -eq $results -or $results.Count -eq 0) {
+        Write-Host "  Warning: No results to export." -ForegroundColor Yellow
+    }
+    elseif ($csvExists -and $ContinuousMode) {
         # Append to existing CSV in continuous mode (preserves historical data)
         # Read existing CSV to get column names and ensure compatibility
         try {
-            # Validate that we have results to export
-            if ($null -eq $results -or $results.Count -eq 0) {
-                Write-Host "  Warning: No results to export." -ForegroundColor Yellow
-                continue
-            }
-            
             $existingData = Import-Csv -Path $OutputFile -ErrorAction Stop
             $existingColumns = @()
             if ($existingData.Count -gt 0) {
@@ -418,10 +417,14 @@ do {
                 $existingColumns = $existingData[0].PSObject.Properties.Name
             }
             else {
-                # If CSV is empty (only headers), read headers directly
+                # If CSV is empty (only headers), parse it properly to handle quoted values
                 $headerLine = Get-Content -Path $OutputFile -First 1 -ErrorAction SilentlyContinue
                 if ($null -ne $headerLine -and $headerLine.Length -gt 0) {
-                    $existingColumns = $headerLine.Split(',')
+                    # Use ConvertFrom-Csv to properly parse CSV headers with potential quotes
+                    $tempObj = "a,b,c`n1,2,3" | ConvertFrom-Csv
+                    # For a single header line, we need to manually parse or use a temp object
+                    # Since we know our headers don't contain commas, simple split is safe here
+                    $existingColumns = $headerLine -replace '"','' -split ','
                 }
             }
             
@@ -440,10 +443,10 @@ do {
                 }
             }
             
-            # Find columns in new data that don't exist in CSV (and remove them to maintain consistency)
+            # Find columns in new data that don't exist in CSV (these will be appended)
             $extraColumns = $newColumns | Where-Object { $_ -notin $existingColumns }
             
-            # Reorder properties to match existing CSV column order, then append extra columns
+            # Reorder properties to match existing CSV column order, then append any extra columns
             if ($existingColumns.Count -gt 0) {
                 $orderedResults = $results | Select-Object -Property ($existingColumns + $extraColumns)
                 $orderedResults | Export-Csv -Path $OutputFile -NoTypeInformation -Encoding UTF8 -Append
@@ -459,8 +462,10 @@ do {
     }
     else {
         # Create new CSV or overwrite in single-run mode (fresh start each run)
-        $results | Export-Csv -Path $OutputFile -NoTypeInformation -Encoding UTF8
-        $csvExists = $true
+        if ($null -ne $results -and $results.Count -gt 0) {
+            $results | Export-Csv -Path $OutputFile -NoTypeInformation -Encoding UTF8
+            $csvExists = $true
+        }
     }
     
     Write-Host ""
