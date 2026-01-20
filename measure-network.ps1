@@ -384,16 +384,16 @@ do {
             Port = if ($protocol -eq "ICMP") { "N/A" } else { $target.Port }
             Protocol = $protocol
             ResolvedIP = $dnsResult.ResolvedIP
-            DnsResolutionTime_ms = $dnsResult.DnsTime
-            AvgLatency_ms = $latencyResult.AvgLatency
-            MinLatency_ms = $latencyResult.MinLatency
-            MaxLatency_ms = $latencyResult.MaxLatency
-            Jitter_ms = $latencyResult.Jitter
-            PacketLoss_percent = $latencyResult.PacketLoss
+            DnsResolutionTime_ms = [string]::Format([System.Globalization.CultureInfo]::InvariantCulture, "{0:F0}", $dnsResult.DnsTime)
+            AvgLatency_ms = [string]::Format([System.Globalization.CultureInfo]::InvariantCulture, "{0:F2}", $latencyResult.AvgLatency)
+            MinLatency_ms = [string]::Format([System.Globalization.CultureInfo]::InvariantCulture, "{0:F0}", $latencyResult.MinLatency)
+            MaxLatency_ms = [string]::Format([System.Globalization.CultureInfo]::InvariantCulture, "{0:F0}", $latencyResult.MaxLatency)
+            Jitter_ms = [string]::Format([System.Globalization.CultureInfo]::InvariantCulture, "{0:F2}", $latencyResult.Jitter)
+            PacketLoss_percent = [string]::Format([System.Globalization.CultureInfo]::InvariantCulture, "{0:F2}", $latencyResult.PacketLoss)
             PacketsSent = $latencyResult.PacketsSent
             PacketsReceived = $latencyResult.PacketsReceived
             PortOpen = $portResult.PortOpen
-            TcpConnectionTime_ms = $portResult.ConnectionTime
+            TcpConnectionTime_ms = [string]::Format([System.Globalization.CultureInfo]::InvariantCulture, "{0:F0}", $portResult.ConnectionTime)
         }
         
         Write-Host ""

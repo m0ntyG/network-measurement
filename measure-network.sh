@@ -235,18 +235,17 @@ measure_tcp_latency() {
         fi
     done
     
-    local avg=$(echo "scale=2; $sum / $success_count" | bc)
+    local avg=$(printf "%.2f" "$(echo "scale=2; $sum / $success_count" | bc)")
     
     # Calculate jitter (average deviation)
     local jitter_sum=0
     for time in "${response_times[@]}"; do
-        local deviation=$(echo "$time - ($avg)" | bc | awk '{if ($1 < 0) print -$1; else print $1}')
+        local deviation=$(printf "%.2f" "$(echo "$time - ($avg)" | bc | awk '{if ($1 < 0) print -$1; else print $1}')")
         jitter_sum=$(echo "scale=2; $jitter_sum + $deviation" | bc)
     done
-    local jitter=$(echo "scale=2; $jitter_sum / $success_count" | bc)
+    local jitter=$(printf "%.2f" "$(echo "scale=2; $jitter_sum / $success_count" | bc)")
     
-    local packet_loss=$(echo "scale=2; (($count - $success_count) / $count) * 100" | bc)
-    packet_loss=$(printf "%.2f" "$packet_loss")
+    local packet_loss=$(printf "%.2f" "$(echo "scale=2; (($count - $success_count) / $count) * 100" | bc)")
     
     echo "$avg|$min|$max|$jitter|$packet_loss|$count|$success_count"
 }
