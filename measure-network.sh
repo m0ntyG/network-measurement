@@ -122,16 +122,20 @@ measure_latency() {
     fi
     
     # Extract statistics
-    local packets_received=$(echo "$ping_output" | awk '/received/ {for(i=1;i<=NF;i++) if($(i+1)=="received") print $i}' || echo "0")
+    if [[ "$OS_TYPE" == "Darwin" ]]; then
+        packets_received=$(echo "$ping_output" | awk '/packets received/ {print $1}' || echo "0")
+    else
+        packets_received=$(echo "$ping_output" | awk '/received/ {for(i=1;i<=NF;i++) if($(i+1)=="received") print $i}' || echo "0")
+    fi
     local packet_loss=$(echo "$ping_output" | awk '/packet loss/ {for(i=1;i<=NF;i++) if($i ~ /%/) {sub(/%/,"",$i); print $i}}' || echo "100")
     
     # MacOS and Linux have different output formats
     if [[ "$OS_TYPE" == "Darwin" ]]; then
         # MacOS: round-trip min/avg/max/stddev = 14.123/15.456/18.789/1.234 ms
-        local stats=$(echo "$ping_output" | grep "round-trip" | awk -F'[=/]' '{print $2"|"$3"|"$4"|"$5}')
+        local stats=$(echo "$ping_output" | grep "round-trip" | sed 's/.*= //' | sed 's/ ms//')
     else
         # Linux: rtt min/avg/max/mdev = 14.123/15.456/18.789/1.234 ms
-        local stats=$(echo "$ping_output" | grep "rtt min/avg/max/mdev" | awk -F'[=/]' '{print $2"|"$3"|"$4"|"$5}')
+        local stats=$(echo "$ping_output" | grep "rtt min/avg/max/mdev" | sed 's/.*= //' | sed 's/ ms//')
     fi
     
     if [[ -z "$stats" ]]; then
@@ -139,7 +143,7 @@ measure_latency() {
         return 1
     fi
     
-    IFS='|' read -r min_latency avg_latency max_latency mdev <<< "$stats"
+    IFS='/' read -r min_latency avg_latency max_latency mdev <<< "$stats"
     
     # Calculate jitter (approximated by standard deviation/mdev)
     local jitter=$(echo "$mdev" | awk '{printf "%.2f", $1}')
@@ -242,6 +246,7 @@ measure_tcp_latency() {
     local jitter=$(echo "scale=2; $jitter_sum / $success_count" | bc)
     
     local packet_loss=$(echo "scale=2; (($count - $success_count) / $count) * 100" | bc)
+    packet_loss=$(printf "%.2f" "$packet_loss")
     
     echo "$avg|$min|$max|$jitter|$packet_loss|$count|$success_count"
 }
