@@ -401,9 +401,83 @@ do {
     
     # Export to CSV (append mode in continuous operation, overwrite in single-run mode)
     Write-Host "Exporting results to: $OutputFile" -ForegroundColor Green
-    if ($csvExists -and $ContinuousMode) {
+    
+    # Validate that we have results to export
+    if ($null -eq $results -or $results.Count -eq 0) {
+        Write-Host "  Warning: No results to export. Skipping CSV export." -ForegroundColor Yellow
+    }
+    elseif ($csvExists -and $ContinuousMode) {
         # Append to existing CSV in continuous mode (preserves historical data)
-        $results | Export-Csv -Path $OutputFile -NoTypeInformation -Encoding UTF8 -Append
+        # Read existing CSV to get column names and ensure compatibility
+        try {
+            $existingData = Import-Csv -Path $OutputFile -ErrorAction Stop
+            $existingColumns = @()
+            if ($existingData.Count -gt 0) {
+                # Get all property names from the first row
+                $existingColumns = $existingData[0].PSObject.Properties.Name
+            }
+            else {
+                # If CSV is empty (only headers), parse headers using a CSV-aware parser
+                $headerLine = Get-Content -Path $OutputFile -First 1 -ErrorAction SilentlyContinue
+                if ($null -ne $headerLine -and $headerLine.Length -gt 0) {
+                    $stringReader = $null
+                    $parser = $null
+                    try {
+                        # Use TextFieldParser to correctly handle quoted CSV headers (including commas in quotes)
+                        Add-Type -AssemblyName Microsoft.VisualBasic -ErrorAction Stop
+                        $stringReader = New-Object System.IO.StringReader($headerLine)
+                        $parser = New-Object Microsoft.VisualBasic.FileIO.TextFieldParser($stringReader)
+                        $parser.TextFieldType = [Microsoft.VisualBasic.FileIO.FieldType]::Delimited
+                        $parser.SetDelimiters(',')
+                        $parser.HasFieldsEnclosedInQuotes = $true
+                        $fields = $parser.ReadFields()
+                        if ($fields) {
+                            $existingColumns = $fields
+                        }
+                    }
+                    catch {
+                        # Fallback: use simple split if TextFieldParser fails or is unavailable
+                        $existingColumns = $headerLine -replace '"','' -split ','
+                    }
+                    finally {
+                        # Ensure proper resource cleanup
+                        if ($null -ne $parser) { $parser.Close() }
+                        if ($null -ne $stringReader) { $stringReader.Close() }
+                    }
+                }
+            }
+            
+            # Get new data columns (safe to access since we validated results.Count > 0 above)
+            $newColumns = $results[0].PSObject.Properties.Name
+            
+            # Find columns that exist in CSV but not in new data
+            $missingColumns = $existingColumns | Where-Object { $_ -notin $newColumns }
+            
+            # Add missing columns to new results with empty/default values
+            if ($missingColumns.Count -gt 0) {
+                foreach ($result in $results) {
+                    foreach ($column in $missingColumns) {
+                        $result | Add-Member -MemberType NoteProperty -Name $column -Value "" -Force
+                    }
+                }
+            }
+            
+            # Find columns in new data that don't exist in CSV (these will be appended)
+            $extraColumns = $newColumns | Where-Object { $_ -notin $existingColumns }
+            
+            # Reorder properties to match existing CSV column order, then append any extra columns
+            if ($existingColumns.Count -gt 0) {
+                $orderedResults = $results | Select-Object -Property (@($existingColumns) + @($extraColumns))
+                $orderedResults | Export-Csv -Path $OutputFile -NoTypeInformation -Encoding UTF8 -Append
+            }
+            else {
+                $results | Export-Csv -Path $OutputFile -NoTypeInformation -Encoding UTF8 -Append
+            }
+        }
+        catch {
+            Write-Host "  Warning: Could not read existing CSV structure. Creating new file." -ForegroundColor Yellow
+            $results | Export-Csv -Path $OutputFile -NoTypeInformation -Encoding UTF8
+        }
     }
     else {
         # Create new CSV or overwrite in single-run mode (fresh start each run)

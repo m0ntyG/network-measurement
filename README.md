@@ -16,7 +16,7 @@ A cross-platform script for measuring network performance to multiple targets (U
 - ✅ **Port Connectivity** - Tests port reachability
 - ✅ **Protocol Selection** - Choose between TCP and ICMP per target
 - ✅ **Continuous Monitoring** - Continuous monitoring with configurable interval
-- ✅ **CSV Export** - Exports results to CSV file (append mode for continuous monitoring)
+- ✅ **CSV Export** - Exports results to CSV file (append mode for continuous monitoring with backward compatibility)
 - ✅ **Performance Optimized** - Reduced ping count and timeouts for minimal system load
 - ✅ **No Admin Rights Required** - No administrator privileges required
 - ✅ **Built-in Windows Tools Only** - Uses only built-in Windows tools
@@ -33,6 +33,7 @@ A cross-platform script for measuring network performance to multiple targets (U
 - MacOS 10.x+ or any modern Linux distribution
 - Bash shell (already installed)
 - Standard Unix tools: `ping`, `dig` or `host`, `date`, `awk`, `sed`, `bc`
+- For TCP connectivity: `nc` (netcat) recommended, or bash with `/dev/tcp` support
 - Python 3 (for MacOS millisecond timestamps - typically pre-installed on MacOS 10.15+)
 - No administrator/root privileges required
 
@@ -125,6 +126,8 @@ bash measure-network.sh
 ### 3. Results
 
 The script creates a CSV file named `network_measurement_results.csv` in the same directory.
+
+**Note:** In continuous mode, the script automatically appends new measurements to the existing CSV file without overwriting previous data. The script is backward compatible and will handle CSVs with different column structures (e.g., additional columns like ConnectionQuality) by automatically adding missing columns with empty values.
 
 #### CSV Fields:
 

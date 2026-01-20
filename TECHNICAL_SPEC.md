@@ -140,10 +140,10 @@ You can interpret the values yourself using common benchmarks:
 |---------|---------------------|-------------------|
 | ICMP Ping | `Test-Connection` cmdlet | `ping` command |
 | DNS Resolution | `.NET System.Net.Dns` | `dig` or `host` command |
-| TCP Connection | `.NET TcpClient` | Bash `/dev/tcp` pseudo-device |
+| TCP Connection | `.NET TcpClient` | `nc` (netcat) or Bash `/dev/tcp` pseudo-device |
 | Timeout | Built into .NET methods | `timeout` command wrapper |
 | Time Measurement | `.NET Stopwatch` | `date +%s%3N` (milliseconds) |
-| CSV Export | `Export-Csv` cmdlet | Standard output redirection |
+| CSV Export | `Export-Csv` cmdlet with backward compatibility | Standard output redirection |
 
 ### Data Flow (Both Platforms)
 
@@ -241,6 +241,7 @@ TEST_INTERVAL=300
 - **OS**: MacOS 10.x or later
 - **Shell**: Bash 3.2+ (included with MacOS)
 - **Tools**: `ping`, `dig`/`host`, `timeout`, `date`, `awk`, `sed`, `bc` (all standard)
+- **TCP Connectivity**: `nc` (netcat) recommended for reliable TCP testing, with fallback to `/dev/tcp`
 - **Python**: Python 3 for millisecond timestamps (pre-installed on MacOS 10.15+, with fallback to second precision)
 - **Privileges**: No root/sudo required
 - **Firewall**: May require ICMP and outbound TCP to be allowed
