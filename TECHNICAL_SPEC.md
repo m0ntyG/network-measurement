@@ -184,9 +184,12 @@ All measurements are exported with the following columns:
 All configuration is at the top of the script for easy access:
 
 ```powershell
-# Target list - each entry requires Name, Host, Port, and Protocol
+# Target list - each entry requires Name, Host, Protocol
+# For ICMP: Port is not required (set to $null)
+# For TCP: Port is required and used for TCP connection testing
 $Targets = @(
-    @{Name="Description"; Host="hostname_or_ip"; Port=port_number; Protocol="ICMP"}
+    @{Name="Description"; Host="hostname_or_ip"; Port=$null; Protocol="ICMP"}
+    @{Name="Description"; Host="hostname_or_ip"; Port=port_number; Protocol="TCP"}
 )
 
 # Number of ping packets to send per target
@@ -205,8 +208,11 @@ All configuration is at the top of the script:
 
 ```bash
 # Target configuration: Name|Host|Port|Protocol
+# For ICMP: Port can be empty (not used for ICMP ping)
+# For TCP: Port is required and used for TCP connection testing
 TARGETS=(
-    "Description|hostname_or_ip|port_number|ICMP"
+    "Description|hostname_or_ip||ICMP"
+    "Description|hostname_or_ip|port_number|TCP"
 )
 
 # Number of ping packets to send per target

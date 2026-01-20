@@ -4,11 +4,13 @@
 
 #region Configuration - Edit targets here
 $Targets = @(
-    @{Name="Google DNS"; Host="8.8.8.8"; Port=443; Protocol="ICMP"},
-    @{Name="Cloudflare DNS"; Host="1.1.1.1"; Port=443; Protocol="ICMP"},
+    # For ICMP: Port=$null (not applicable for ICMP ping)
+    # For TCP: Port=number (required for TCP connection testing)
+    @{Name="Google DNS"; Host="8.8.8.8"; Port=$null; Protocol="ICMP"},
+    @{Name="Cloudflare DNS"; Host="1.1.1.1"; Port=$null; Protocol="ICMP"},
     @{Name="Google"; Host="www.google.com"; Port=443; Protocol="TCP"},
     @{Name="Microsoft"; Host="www.microsoft.com"; Port=443; Protocol="TCP"},
-    @{Name="GitHub"; Host="github.com"; Port=443; Protocol="ICMP"}
+    @{Name="GitHub"; Host="github.com"; Port=443; Protocol="TCP"}
 )
 
 # Measurement settings
@@ -318,7 +320,20 @@ do {
             $protocol = "ICMP"
         }
         
-        Write-Host "Testing: $($target.Name) ($($target.Host):$($target.Port)) [Protocol: $protocol]" -ForegroundColor Green
+        # Validate TCP targets have a port
+        if ($protocol -eq "TCP" -and ($null -eq $target.Port -or $target.Port -eq "")) {
+            Write-Host "Error: TCP protocol requires a port number for target '$($target.Name)'. Skipping." -ForegroundColor Red
+            Write-Host ""
+            continue
+        }
+        
+        # Display target info (with or without port depending on protocol)
+        if ($protocol -eq "ICMP") {
+            Write-Host "Testing: $($target.Name) ($($target.Host)) [Protocol: $protocol]" -ForegroundColor Green
+        }
+        else {
+            Write-Host "Testing: $($target.Name) ($($target.Host):$($target.Port)) [Protocol: $protocol]" -ForegroundColor Green
+        }
         Write-Host ("=" * 60) -ForegroundColor Gray
         
         # DNS Resolution
@@ -345,19 +360,19 @@ do {
             Write-Host "  Packet Loss: $($latencyResult.PacketLoss)% ($($latencyResult.PacketsReceived)/$($latencyResult.PacketsSent))" -ForegroundColor White
         }
         
-        # Port Connectivity (only if not already tested via TCP protocol)
-        if ($protocol -ne "TCP") {
-            $portResult = Test-PortConnectivity -Target $target.Host -Port $target.Port
-            Write-Host "  Port $($target.Port): $(if($portResult.PortOpen){'Open'}else{'Closed/Filtered'})" -ForegroundColor White
-            if ($portResult.PortOpen -and $portResult.ConnectionTime -ge 0) {
-                Write-Host "  TCP Connection Time: $($portResult.ConnectionTime) ms" -ForegroundColor White
-            }
-        }
-        else {
+        # Port Connectivity (only for TCP protocol)
+        if ($protocol -eq "TCP") {
             # For TCP protocol, port is implicitly tested via latency measurement
             $portResult = @{
                 PortOpen = $latencyResult.Success
                 ConnectionTime = $latencyResult.AvgLatency
+            }
+        }
+        else {
+            # For ICMP protocol, port testing is not applicable
+            $portResult = @{
+                PortOpen = "N/A"
+                ConnectionTime = -1
             }
         }
         
@@ -366,7 +381,7 @@ do {
             Timestamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
             TargetName = $target.Name
             Hostname = $target.Host
-            Port = $target.Port
+            Port = if ($protocol -eq "ICMP") { "N/A" } else { $target.Port }
             Protocol = $protocol
             ResolvedIP = $dnsResult.ResolvedIP
             DnsResolutionTime_ms = $dnsResult.DnsTime
