@@ -160,10 +160,17 @@ test_tcp_connection() {
     local timeout_val="$3"
     
     # Try multiple methods for TCP connection testing
-    # Method 1: Try nc (netcat) if available - most reliable
+    # Method 1: Try nc (netcat) if available - handle platform differences
     if command -v nc &> /dev/null; then
-        if nc -z -w "$timeout_val" "$target" "$port" 2>/dev/null; then
-            return 0
+        # On macOS (BSD nc), -w sets the connection timeout; on Linux (GNU nc), wrap with timeout(1)
+        if [[ "$OS_TYPE" == "Darwin" ]]; then
+            if nc -z -w "$timeout_val" "$target" "$port" 2>/dev/null; then
+                return 0
+            fi
+        else
+            if timeout "$timeout_val" nc -z "$target" "$port" 2>/dev/null; then
+                return 0
+            fi
         fi
     fi
     

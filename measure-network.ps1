@@ -417,11 +417,28 @@ do {
                 $existingColumns = $existingData[0].PSObject.Properties.Name
             }
             else {
-                # If CSV is empty (only headers), parse headers manually
+                # If CSV is empty (only headers), parse headers using a CSV-aware parser
                 $headerLine = Get-Content -Path $OutputFile -First 1 -ErrorAction SilentlyContinue
                 if ($null -ne $headerLine -and $headerLine.Length -gt 0) {
-                    # Remove quotes and split by comma (our headers don't contain commas)
-                    $existingColumns = $headerLine -replace '"','' -split ','
+                    try {
+                        # Use TextFieldParser to correctly handle quoted CSV headers (including commas in quotes)
+                        Add-Type -AssemblyName Microsoft.VisualBasic -ErrorAction SilentlyContinue
+                        $stringReader = New-Object System.IO.StringReader($headerLine)
+                        $parser = New-Object Microsoft.VisualBasic.FileIO.TextFieldParser($stringReader)
+                        $parser.TextFieldType = [Microsoft.VisualBasic.FileIO.FieldType]::Delimited
+                        $parser.SetDelimiters(',')
+                        $parser.HasFieldsEnclosedInQuotes = $true
+                        $fields = $parser.ReadFields()
+                        if ($fields) {
+                            $existingColumns = $fields
+                        }
+                        $parser.Close()
+                        $stringReader.Close()
+                    }
+                    catch {
+                        # Fallback: use simple split if TextFieldParser fails
+                        $existingColumns = $headerLine -replace '"','' -split ','
+                    }
                 }
             }
             
@@ -445,7 +462,7 @@ do {
             
             # Reorder properties to match existing CSV column order, then append any extra columns
             if ($existingColumns.Count -gt 0) {
-                $orderedResults = $results | Select-Object -Property ($existingColumns + $extraColumns)
+                $orderedResults = $results | Select-Object -Property (@($existingColumns) + @($extraColumns))
                 $orderedResults | Export-Csv -Path $OutputFile -NoTypeInformation -Encoding UTF8 -Append
             }
             else {
