@@ -420,9 +420,11 @@ do {
                 # If CSV is empty (only headers), parse headers using a CSV-aware parser
                 $headerLine = Get-Content -Path $OutputFile -First 1 -ErrorAction SilentlyContinue
                 if ($null -ne $headerLine -and $headerLine.Length -gt 0) {
+                    $stringReader = $null
+                    $parser = $null
                     try {
                         # Use TextFieldParser to correctly handle quoted CSV headers (including commas in quotes)
-                        Add-Type -AssemblyName Microsoft.VisualBasic -ErrorAction SilentlyContinue
+                        Add-Type -AssemblyName Microsoft.VisualBasic -ErrorAction Stop
                         $stringReader = New-Object System.IO.StringReader($headerLine)
                         $parser = New-Object Microsoft.VisualBasic.FileIO.TextFieldParser($stringReader)
                         $parser.TextFieldType = [Microsoft.VisualBasic.FileIO.FieldType]::Delimited
@@ -432,12 +434,15 @@ do {
                         if ($fields) {
                             $existingColumns = $fields
                         }
-                        $parser.Close()
-                        $stringReader.Close()
                     }
                     catch {
-                        # Fallback: use simple split if TextFieldParser fails
+                        # Fallback: use simple split if TextFieldParser fails or is unavailable
                         $existingColumns = $headerLine -replace '"','' -split ','
+                    }
+                    finally {
+                        # Ensure proper resource cleanup
+                        if ($null -ne $parser) { $parser.Close() }
+                        if ($null -ne $stringReader) { $stringReader.Close() }
                     }
                 }
             }
