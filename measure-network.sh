@@ -6,12 +6,14 @@
 #region Configuration - Edit targets here
 # Target configuration: Name|Host|Port|Protocol
 # Protocol can be ICMP or TCP
+# For ICMP: Port can be empty or set to "N/A" (not used for ICMP ping)
+# For TCP: Port is required and used for TCP connection testing
 TARGETS=(
-    "Google DNS|8.8.8.8|443|ICMP"
-    "Cloudflare DNS|1.1.1.1|443|ICMP"
+    "Google DNS|8.8.8.8||ICMP"
+    "Cloudflare DNS|1.1.1.1||ICMP"
     "Google|www.google.com|443|TCP"
     "Microsoft|www.microsoft.com|443|TCP"
-    "GitHub|github.com|443|ICMP"
+    "GitHub|github.com|443|TCP"
 )
 
 # Measurement settings
@@ -295,7 +297,12 @@ while true; do
             protocol="ICMP"
         fi
         
-        echo -e "${GREEN}Testing: $name ($host:$port) [Protocol: $protocol]${NC}"
+        # Display target info (with or without port depending on protocol)
+        if [[ "$protocol" == "ICMP" ]]; then
+            echo -e "${GREEN}Testing: $name ($host) [Protocol: $protocol]${NC}"
+        else
+            echo -e "${GREEN}Testing: $name ($host:$port) [Protocol: $protocol]${NC}"
+        fi
         echo -e "${GRAY}$(printf '=%.0s' {1..60})${NC}"
         
         # DNS Resolution
@@ -323,19 +330,9 @@ while true; do
         echo -e "${WHITE}  Jitter: $jitter ms${NC}"
         echo -e "${WHITE}  Packet Loss: $packet_loss% ($packets_received/$packets_sent)${NC}"
         
-        # Port Connectivity (only if not already tested via TCP protocol)
-        if [[ "$protocol" != "TCP" ]]; then
-            port_result=$(test_port_connectivity "$host" "$port" "$TCP_TIMEOUT")
-            IFS='|' read -r port_open connection_time <<< "$port_result"
-            
-            if [[ "$port_open" == "true" ]]; then
-                echo -e "${WHITE}  Port $port: Open${NC}"
-                echo -e "${WHITE}  TCP Connection Time: $connection_time ms${NC}"
-            else
-                echo -e "${WHITE}  Port $port: Closed/Filtered${NC}"
-            fi
-        else
-            # For TCP protocol, port is implicitly tested
+        # Port Connectivity (only for TCP protocol)
+        if [[ "$protocol" == "TCP" ]]; then
+            # For TCP protocol, port is implicitly tested via latency measurement
             if (( $(echo "$packet_loss < 100" | bc -l) )); then
                 port_open="true"
                 connection_time="$avg_latency"
@@ -343,6 +340,11 @@ while true; do
                 port_open="false"
                 connection_time="-1"
             fi
+        else
+            # For ICMP protocol, port testing is not applicable
+            port_open="N/A"
+            connection_time="-1"
+            port="N/A"
         fi
         
         # Store results

@@ -35,9 +35,10 @@
 2. Find the section with `$Targets = @(`
 3. Add new lines or modify existing ones:
    ```powershell
-   @{Name="My Server"; Host="192.168.1.100"; Port=80; Protocol="ICMP"},
+   @{Name="My Server"; Host="192.168.1.100"; Port=$null; Protocol="ICMP"},
    @{Name="Web Server"; Host="example.com"; Port=443; Protocol="TCP"},
    ```
+   **Note**: For ICMP protocol, set `Port=$null` (not used). For TCP protocol, specify the port number.
 
 ### Continuous Mode:
 
@@ -78,7 +79,7 @@ You can interpret the values yourself using common benchmarks:
   Test Cycle #1 - 2026-01-19 10:30:00
 ======================================
 
-Testing: Google DNS (8.8.8.8:443) [Protocol: ICMP]
+Testing: Google DNS (8.8.8.8) [Protocol: ICMP]
 ============================================================
   Resolved IP: 8.8.8.8
   DNS Resolution Time: 0 ms
@@ -88,8 +89,6 @@ Testing: Google DNS (8.8.8.8:443) [Protocol: ICMP]
   Min/Max Latency: 14 / 18 ms
   Jitter: 1.2 ms
   Packet Loss: 0% (4/4)
-  Port 443: Open
-  TCP Connection Time: 16 ms
   
 
 Summary:
@@ -140,11 +139,12 @@ powershell -ExecutionPolicy Bypass -File .\measure-network.ps1
 2. Find the section with `TARGETS=(`
 3. Add new lines or modify existing ones:
    ```bash
-   "My Server|192.168.1.100|80|ICMP"
+   "My Server|192.168.1.100||ICMP"
    "Web Server|example.com|443|TCP"
    ```
 
    Format: `"Name|Host|Port|Protocol"`
+   **Note**: For ICMP protocol, leave Port empty (not used). For TCP protocol, specify the port number.
 
 ### Continuous Mode:
 
@@ -183,7 +183,7 @@ To stop the script: Press **Ctrl+C**
   Test Cycle #1 - 2026-01-19 10:30:00
 ======================================
 
-Testing: Google DNS (8.8.8.8:443) [Protocol: ICMP]
+Testing: Google DNS (8.8.8.8) [Protocol: ICMP]
 ============================================================
   Resolved IP: 8.8.8.8
   DNS Resolution Time: 0 ms
@@ -193,8 +193,6 @@ Testing: Google DNS (8.8.8.8:443) [Protocol: ICMP]
   Min/Max Latency: 14 / 18 ms
   Jitter: 1.2 ms
   Packet Loss: 0% (4/4)
-  Port 443: Open
-  TCP Connection Time: 16 ms
   
 
 Summary:

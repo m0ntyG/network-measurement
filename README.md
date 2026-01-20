@@ -46,11 +46,11 @@ Open the file `measure-network.ps1` and edit the target list at the beginning:
 
 ```powershell
 $Targets = @(
-    @{Name="Google DNS"; Host="8.8.8.8"; Port=443; Protocol="ICMP"},
-    @{Name="Cloudflare DNS"; Host="1.1.1.1"; Port=443; Protocol="ICMP"},
+    @{Name="Google DNS"; Host="8.8.8.8"; Port=$null; Protocol="ICMP"},
+    @{Name="Cloudflare DNS"; Host="1.1.1.1"; Port=$null; Protocol="ICMP"},
     @{Name="Google"; Host="www.google.com"; Port=443; Protocol="TCP"},
     @{Name="Microsoft"; Host="www.microsoft.com"; Port=443; Protocol="TCP"},
-    @{Name="GitHub"; Host="github.com"; Port=443; Protocol="ICMP"}
+    @{Name="GitHub"; Host="github.com"; Port=443; Protocol="TCP"}
 )
 
 # Measurement settings
@@ -67,11 +67,11 @@ Open the file `measure-network.sh` and edit the target list at the beginning:
 
 ```bash
 TARGETS=(
-    "Google DNS|8.8.8.8|443|ICMP"
-    "Cloudflare DNS|1.1.1.1|443|ICMP"
+    "Google DNS|8.8.8.8||ICMP"
+    "Cloudflare DNS|1.1.1.1||ICMP"
     "Google|www.google.com|443|TCP"
     "Microsoft|www.microsoft.com|443|TCP"
-    "GitHub|github.com|443|ICMP"
+    "GitHub|github.com|443|TCP"
 )
 
 # Measurement settings
@@ -85,7 +85,7 @@ TEST_INTERVAL=300               # Interval between test cycles in seconds (5 min
 Each entry requires:
 - **Name**: Descriptive name for the target
 - **Host**: URL or IP address
-- **Port**: Port number to test
+- **Port**: Port number to test (leave empty for ICMP, required for TCP)
 - **Protocol**: "ICMP" for ping or "TCP" for TCP connections
 
 **Continuous Mode:**
@@ -245,7 +245,7 @@ Configuration:
   Test Cycle #1 - 2026-01-19 10:30:00
 ======================================
 
-Testing: Google DNS (8.8.8.8:443) [Protocol: ICMP]
+Testing: Google DNS (8.8.8.8) [Protocol: ICMP]
 ============================================================
   Resolved IP: 8.8.8.8
   DNS Resolution Time: 0 ms
@@ -255,8 +255,6 @@ Testing: Google DNS (8.8.8.8:443) [Protocol: ICMP]
   Min/Max Latency: 14 / 18 ms
   Jitter: 1.2 ms
   Packet Loss: 0% (4/4)
-  Port 443: Open
-  TCP Connection Time: 16 ms
 
 Testing: Google (www.google.com:443) [Protocol: TCP]
 ============================================================
