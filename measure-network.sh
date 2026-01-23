@@ -125,7 +125,7 @@ measure_traceroute() {
         traceroute_output=$(timeout 60 tracepath -m "$max_hops" "$target" 2>/dev/null)
     elif command -v traceroute &> /dev/null; then
         # Linux with traceroute installed: Use UDP mode (no admin needed)
-        # -m for max hops, -w for wait time, -q for queries per hop, -n for numeric output
+        # -m for max hops, -w for wait time, -q for queries per hop
         traceroute_cmd="traceroute -m $max_hops -w 2 -q 1"
         traceroute_output=$(timeout 60 traceroute -m "$max_hops" -w 2 -q 1 "$target" 2>/dev/null)
     else
@@ -147,14 +147,23 @@ measure_traceroute() {
     if [[ "$traceroute_cmd" == *"tracepath"* ]]; then
         # Parse tracepath output (different format)
         # Example: " 1:  gateway (192.168.1.1)  0.123ms"
+        # Example: " 1:  192.168.1.1  0.123ms" (IP only, no hostname)
         # Example: " 1:  no reply"
         while IFS= read -r line; do
-            # Match successful hop with IP and latency
-            if [[ "$line" =~ ^[[:space:]]*([0-9]+):[[:space:]]+([^[:space:]]+)[[:space:]]+\(([0-9.]+)\)[[:space:]]+([0-9.]+)ms ]]; then
+            # Match successful hop with hostname, IP and latency
+            if [[ "$line" =~ ^[[:space:]]*([0-9]+):[[:space:]]+([^[:space:]]+)[[:space:]]+\(([0-9.]+)\)[[:space:]]+([0-9.]+)[[:space:]]*ms ]]; then
                 local hop_num="${BASH_REMATCH[1]}"
                 local hop_host="${BASH_REMATCH[2]}"
                 local hop_ip="${BASH_REMATCH[3]}"
                 local hop_latency="${BASH_REMATCH[4]}"
+                ((hop_count++))
+                hop_details+="Hop$hop_num:$hop_host($hop_ip)=$hop_latency ms;"
+            # Match successful hop with only IP and latency (no hostname, e.g. when reverse DNS fails)
+            elif [[ "$line" =~ ^[[:space:]]*([0-9]+):[[:space:]]+([0-9.]+)[[:space:]]+([0-9.]+)[[:space:]]*ms ]]; then
+                local hop_num="${BASH_REMATCH[1]}"
+                local hop_ip="${BASH_REMATCH[2]}"
+                local hop_latency="${BASH_REMATCH[3]}"
+                local hop_host="$hop_ip"
                 ((hop_count++))
                 hop_details+="Hop$hop_num:$hop_host($hop_ip)=$hop_latency ms;"
             # Match hop with no reply (timeout)
@@ -167,6 +176,7 @@ measure_traceroute() {
     else
         # Parse traceroute output (standard format)
         # Example: " 1  gateway (192.168.1.1)  0.123 ms"
+        # Example: " 1  192.168.1.1  0.123 ms" (IP only, no hostname)
         while IFS= read -r line; do
             # Match hop lines: number hostname (ip) time
             if [[ "$line" =~ ^[[:space:]]*([0-9]+)[[:space:]]+([^[:space:]]+)[[:space:]]+\(([0-9.]+)\)[[:space:]]+([0-9.]+)[[:space:]]ms ]]; then
@@ -174,6 +184,14 @@ measure_traceroute() {
                 local hop_host="${BASH_REMATCH[2]}"
                 local hop_ip="${BASH_REMATCH[3]}"
                 local hop_latency="${BASH_REMATCH[4]}"
+                ((hop_count++))
+                hop_details+="Hop$hop_num:$hop_host($hop_ip)=$hop_latency ms;"
+            # Match hop lines: number ip time (no hostname, e.g. when reverse DNS fails)
+            elif [[ "$line" =~ ^[[:space:]]*([0-9]+)[[:space:]]+([0-9.]+)[[:space:]]+([0-9.]+)[[:space:]]ms ]]; then
+                local hop_num="${BASH_REMATCH[1]}"
+                local hop_ip="${BASH_REMATCH[2]}"
+                local hop_latency="${BASH_REMATCH[3]}"
+                local hop_host="$hop_ip"
                 ((hop_count++))
                 hop_details+="Hop$hop_num:$hop_host($hop_ip)=$hop_latency ms;"
             elif [[ "$line" =~ ^[[:space:]]*([0-9]+)[[:space:]]+\*[[:space:]]*\*[[:space:]]*\* ]]; then
@@ -395,6 +413,31 @@ echo ""
 csv_exists=false
 if [[ -f "$OUTPUT_FILE" ]]; then
     csv_exists=true
+    
+    # Check if CSV needs schema update when traceroute is enabled
+    if [[ "$ENABLE_TRACEROUTE" == "true" ]]; then
+        # Read the header line
+        header=$(head -n 1 "$OUTPUT_FILE" 2>/dev/null)
+        
+        # Check if TracerouteStatus column exists
+        if [[ ! "$header" =~ TracerouteStatus ]]; then
+            echo -e "${YELLOW}Warning: Existing CSV file lacks traceroute columns. Adding them to header...${NC}"
+            
+            # Read all existing data
+            tail -n +2 "$OUTPUT_FILE" > "${OUTPUT_FILE}.tmp" 2>/dev/null || true
+            
+            # Write new header with traceroute columns
+            echo "Timestamp,TargetName,Hostname,Port,Protocol,ResolvedIP,DnsResolutionTime_ms,AvgLatency_ms,MinLatency_ms,MaxLatency_ms,Jitter_ms,PacketLoss_percent,PacketsSent,PacketsReceived,PortOpen,TcpConnectionTime_ms,TracerouteStatus,TracerouteHops,TracerouteDetails" > "$OUTPUT_FILE"
+            
+            # Append existing data with empty traceroute columns
+            if [[ -f "${OUTPUT_FILE}.tmp" ]]; then
+                while IFS= read -r line; do
+                    echo "$line,Disabled,0,\"\"" >> "$OUTPUT_FILE"
+                done < "${OUTPUT_FILE}.tmp"
+                rm -f "${OUTPUT_FILE}.tmp"
+            fi
+        fi
+    fi
 fi
 
 test_cycle=0
@@ -509,11 +552,23 @@ while true; do
         
         # Store results
         timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+        
+        # CSV-escape text fields (double any embedded quotes) and wrap them in quotes in the output
+        escaped_name=${name//\"/\"\"}
+        escaped_host=${host//\"/\"\"}
+        escaped_csv_port=${csv_port//\"/\"\"}
+        escaped_protocol=${protocol//\"/\"\"}
+        escaped_resolved_ip=${resolved_ip//\"/\"\"}
+        escaped_port_open=${port_open//\"/\"\"}
+        
         if [[ "$ENABLE_TRACEROUTE" == "true" ]]; then
+            escaped_traceroute_status=${traceroute_status//\"/\"\"}
+            escaped_traceroute_details=${traceroute_details//\"/\"\"}
             # Format: Timestamp,Name,Host,Port,Protocol,IP,DNS_ms,Latency,Min,Max,Jitter,Loss%,Sent,Received,PortOpen,ConnTime,TR_Status,TR_Hops,TR_Details
-            echo "$timestamp,$name,$host,$csv_port,$protocol,$resolved_ip,$dns_time,$avg_latency,$min_latency,$max_latency,$jitter,$packet_loss,$packets_sent,$packets_received,$port_open,$connection_time,$traceroute_status,$traceroute_hops,\"$traceroute_details\"" >> "$temp_results"
+            echo "\"$timestamp\",\"$escaped_name\",\"$escaped_host\",\"$escaped_csv_port\",\"$escaped_protocol\",\"$escaped_resolved_ip\",$dns_time,$avg_latency,$min_latency,$max_latency,$jitter,$packet_loss,$packets_sent,$packets_received,\"$escaped_port_open\",$connection_time,\"$escaped_traceroute_status\",$traceroute_hops,\"$escaped_traceroute_details\"" >> "$temp_results"
         else
-            echo "$timestamp,$name,$host,$csv_port,$protocol,$resolved_ip,$dns_time,$avg_latency,$min_latency,$max_latency,$jitter,$packet_loss,$packets_sent,$packets_received,$port_open,$connection_time" >> "$temp_results"
+            # Format: Timestamp,Name,Host,Port,Protocol,IP,DNS_ms,Latency,Min,Max,Jitter,Loss%,Sent,Received,PortOpen,ConnTime
+            echo "\"$timestamp\",\"$escaped_name\",\"$escaped_host\",\"$escaped_csv_port\",\"$escaped_protocol\",\"$escaped_resolved_ip\",$dns_time,$avg_latency,$min_latency,$max_latency,$jitter,$packet_loss,$packets_sent,$packets_received,\"$escaped_port_open\",$connection_time" >> "$temp_results"
         fi
         
         echo ""

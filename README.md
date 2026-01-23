@@ -93,7 +93,6 @@ TRACEROUTE_MAX_HOPS=30          # Maximum number of hops for traceroute
 ```
 
 **Note:** Traceroute is disabled by default to minimize test time. Set `ENABLE_TRACEROUTE=true` to enable hop-by-hop network path analysis.
-```
 
 Each entry requires:
 - **Name**: Descriptive name for the target

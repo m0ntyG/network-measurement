@@ -365,9 +365,9 @@ function Measure-Traceroute {
     
     Write-Host "  Performing traceroute (max $MaxHops hops)..." -ForegroundColor Cyan
     
-    try {
-        # Use Test-NetConnection with TraceRoute parameter (available in PowerShell 4.0+)
-        # This is the modern way, but falls back to tracert.exe if not available
+    # Create a script block to run with timeout protection
+    $tracerouteScript = {
+        param($Target, $MaxHops)
         
         # Try Test-NetConnection first (Windows 8.1/Server 2012 R2 and later)
         if (Get-Command Test-NetConnection -ErrorAction SilentlyContinue) {
@@ -381,14 +381,25 @@ function Measure-Traceroute {
                     for ($i = 0; $i -lt $traceResult.TraceRoute.Count; $i++) {
                         $hopNum = $i + 1
                         $hopIp = $traceResult.TraceRoute[$i]
-                        
-                        # Try to resolve hostname for each hop (optional, may slow down)
                         $hopHost = $hopIp
                         
-                        $hopDetails += "Hop$hopNum`:$hopHost($hopIp)=* ms;"
+                        # NOTE: Test-NetConnection -TraceRoute does not provide per-hop latency.
+                        # To get approximate latency, we ping each hop once.
+                        $hopLatencyMs = $null
+                        try {
+                            $pingResult = Test-Connection -ComputerName $hopIp -Count 1 -ErrorAction SilentlyContinue
+                            if ($pingResult -and $pingResult.ResponseTime) {
+                                $hopLatencyMs = [math]::Round($pingResult.ResponseTime, 2)
+                            }
+                        }
+                        catch {
+                            # If ping fails, leave latency as null
+                        }
+                        
+                        $latencyDisplay = if ($null -ne $hopLatencyMs) { "$hopLatencyMs ms" } else { "* ms" }
+                        $hopDetails += "Hop$hopNum`:$hopHost($hopIp)=$latencyDisplay;"
                     }
                     
-                    # Remove trailing semicolon
                     $hopDetails = $hopDetails.TrimEnd(';')
                     
                     return @{
@@ -420,26 +431,37 @@ function Measure-Traceroute {
         
         foreach ($line in $tracertOutput) {
             # Match lines like: "  1    <1 ms    <1 ms    <1 ms  router.local [192.168.1.1]"
-            # or: "  2     *        *        *     Request timed out."
-            if ($line -match '^\s+(\d+)\s+.*\[?([0-9\.]+)\]?\s*$') {
+            # Match with hostname and IP in brackets
+            if ($line -match '^\s+(\d+)\s+(?:\*|<?\d+\s+ms)\s+(?:\*|<?\d+\s+ms)\s+(?:\*|<?\d+\s+ms)\s+(\S+)\s+\[([0-9\.]+)\]') {
                 $hopNum = $matches[1]
-                $hopIp = $matches[2]
+                $hopHost = $matches[2]
+                $hopIp = $matches[3]
                 $hopCount++
                 
-                # Extract latency if available (first non-* time)
+                # Extract first valid latency
                 $latency = "*"
-                if ($line -match '(\d+)\s+ms') {
+                if ($line -match '<?\s*(\d+)\s+ms') {
                     $latency = $matches[1]
-                }
-                
-                # Extract hostname if available
-                $hopHost = $hopIp
-                if ($line -match '\s+(\S+)\s+\[') {
-                    $hopHost = $matches[1]
                 }
                 
                 $hopDetails += "Hop$hopNum`:$hopHost($hopIp)=$latency ms;"
             }
+            # Match with just IP (no hostname, reverse DNS failed)
+            elseif ($line -match '^\s+(\d+)\s+(?:\*|<?\d+\s+ms)\s+(?:\*|<?\d+\s+ms)\s+(?:\*|<?\d+\s+ms)\s+([0-9\.]+)\s*$') {
+                $hopNum = $matches[1]
+                $hopIp = $matches[2]
+                $hopCount++
+                
+                # Extract first valid latency
+                $latency = "*"
+                if ($line -match '<?\s*(\d+)\s+ms') {
+                    $latency = $matches[1]
+                }
+                
+                $hopHost = $hopIp
+                $hopDetails += "Hop$hopNum`:$hopHost($hopIp)=$latency ms;"
+            }
+            # Match timeout hops: "  2     *        *        *     Request timed out."
             elseif ($line -match '^\s+(\d+)\s+\*\s+\*\s+\*') {
                 $hopNum = $matches[1]
                 $hopCount++
@@ -447,7 +469,6 @@ function Measure-Traceroute {
             }
         }
         
-        # Remove trailing semicolon
         $hopDetails = $hopDetails.TrimEnd(';')
         
         if ($hopCount -eq 0) {
@@ -462,6 +483,37 @@ function Measure-Traceroute {
             Status  = "Success"
             Hops    = $hopCount
             Details = $hopDetails
+        }
+    }
+    
+    try {
+        # Run traceroute with 60-second timeout
+        $job = Start-Job -ScriptBlock $tracerouteScript -ArgumentList $Target, $MaxHops
+        $result = Wait-Job -Job $job -Timeout 60
+        
+        if ($null -eq $result) {
+            # Timeout occurred
+            Stop-Job -Job $job
+            Remove-Job -Job $job
+            Write-Host "  Traceroute timed out after 60 seconds" -ForegroundColor Red
+            return @{
+                Status  = "Failed"
+                Hops    = 0
+                Details = ""
+            }
+        }
+        
+        $output = Receive-Job -Job $job
+        Remove-Job -Job $job
+        
+        if ($null -ne $output) {
+            return $output
+        }
+        
+        return @{
+            Status  = "Failed"
+            Hops    = 0
+            Details = ""
         }
     }
     catch {
