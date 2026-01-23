@@ -385,7 +385,7 @@ function Measure-Traceroute {
                         # Try to resolve hostname for each hop (optional, may slow down)
                         $hopHost = $hopIp
                         
-                        $hopDetails += "Hop$hopNum`:$hopHost($hopIp)=N/A ms;"
+                        $hopDetails += "Hop$hopNum`:$hopHost($hopIp)=* ms;"
                     }
                     
                     # Remove trailing semicolon
@@ -406,7 +406,7 @@ function Measure-Traceroute {
         # Fallback to tracert.exe (native Windows tool, available on all versions)
         $tracertOutput = & tracert -h $MaxHops -w 2000 $Target 2>&1
         
-        if ($LASTEXITCODE -ne 0 -and $LASTEXITCODE -ne $null) {
+        if ($null -ne $LASTEXITCODE -and $LASTEXITCODE -ne 0) {
             return @{
                 Status  = "Failed"
                 Hops    = 0
@@ -427,7 +427,7 @@ function Measure-Traceroute {
                 $hopCount++
                 
                 # Extract latency if available (first non-* time)
-                $latency = "N/A"
+                $latency = "*"
                 if ($line -match '(\d+)\s+ms') {
                     $latency = $matches[1]
                 }
@@ -443,7 +443,7 @@ function Measure-Traceroute {
             elseif ($line -match '^\s+(\d+)\s+\*\s+\*\s+\*') {
                 $hopNum = $matches[1]
                 $hopCount++
-                $hopDetails += "Hop$hopNum`:*=* ms;"
+                $hopDetails += "Hop$hopNum`:*(*):* ms;"
             }
         }
         

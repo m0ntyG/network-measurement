@@ -114,7 +114,7 @@ measure_traceroute() {
     # Detect which traceroute tool is available
     # Priority: traceroute (macOS native) > tracepath (Linux iputils) > fallback
     if [[ "$OS_TYPE" == "Darwin" ]] && command -v traceroute &> /dev/null; then
-        # macOS: Use native traceroute with ICMP (no admin needed with -I might need sudo, so use default UDP)
+        # macOS: Use native traceroute with ICMP (no admin needed with -I, which might need sudo, so use default UDP)
         # -m for max hops, -w for wait time, -q for queries per hop
         traceroute_cmd="traceroute -m $max_hops -w 2 -q 1"
         traceroute_output=$(timeout 60 traceroute -m "$max_hops" -w 2 -q 1 "$target" 2>/dev/null)
@@ -180,7 +180,7 @@ measure_traceroute() {
                 # Timeout hop
                 local hop_num="${BASH_REMATCH[1]}"
                 ((hop_count++))
-                hop_details+="Hop$hop_num:*=* ms;"
+                hop_details+="Hop$hop_num:*(*):* ms;"
             fi
         done <<< "$traceroute_output"
     fi
@@ -510,6 +510,7 @@ while true; do
         # Store results
         timestamp=$(date '+%Y-%m-%d %H:%M:%S')
         if [[ "$ENABLE_TRACEROUTE" == "true" ]]; then
+            # Format: Timestamp,Name,Host,Port,Protocol,IP,DNS_ms,Latency,Min,Max,Jitter,Loss%,Sent,Received,PortOpen,ConnTime,TR_Status,TR_Hops,TR_Details
             echo "$timestamp,$name,$host,$csv_port,$protocol,$resolved_ip,$dns_time,$avg_latency,$min_latency,$max_latency,$jitter,$packet_loss,$packets_sent,$packets_received,$port_open,$connection_time,$traceroute_status,$traceroute_hops,\"$traceroute_details\"" >> "$temp_results"
         else
             echo "$timestamp,$name,$host,$csv_port,$protocol,$resolved_ip,$dns_time,$avg_latency,$min_latency,$max_latency,$jitter,$packet_loss,$packets_sent,$packets_received,$port_open,$connection_time" >> "$temp_results"
