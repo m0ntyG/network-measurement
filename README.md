@@ -15,11 +15,12 @@ A cross-platform script for measuring network performance to multiple targets (U
 - ✅ **Jitter** - Measures latency variations
 - ✅ **Port Connectivity** - Tests port reachability
 - ✅ **Protocol Selection** - Choose between TCP and ICMP per target
+- ✅ **Hop-by-Hop Traceroute** - Optional traceroute to show network path (NEW!)
 - ✅ **Continuous Monitoring** - Continuous monitoring with configurable interval
 - ✅ **CSV Export** - Exports results to CSV file (append mode for continuous monitoring with backward compatibility)
 - ✅ **Performance Optimized** - Reduced ping count and timeouts for minimal system load
 - ✅ **No Admin Rights Required** - No administrator privileges required
-- ✅ **Built-in Windows Tools Only** - Uses only built-in Windows tools
+- ✅ **Built-in Tools Only** - Uses only native OS tools (no installation required)
 - ✅ **Endpoint Security Friendly** - Delays between tests to respect security policies
 
 ## Requirements
@@ -27,6 +28,7 @@ A cross-platform script for measuring network performance to multiple targets (U
 ### Windows
 - Windows 10 or Windows 11
 - PowerShell (already installed)
+- `tracert.exe` (for traceroute - already installed)
 - No administrator privileges required
 
 ### MacOS / Linux
@@ -34,6 +36,7 @@ A cross-platform script for measuring network performance to multiple targets (U
 - Bash shell (already installed)
 - Standard Unix tools: `ping`, `dig` or `host`, `date`, `awk`, `sed`, `bc`
 - For TCP connectivity: `nc` (netcat) recommended, or bash with `/dev/tcp` support
+- For traceroute: `traceroute` (macOS native) or `tracepath` (Linux iputils - usually pre-installed)
 - Python 3 (for MacOS millisecond timestamps - typically pre-installed on MacOS 10.15+)
 - No administrator/root privileges required
 
@@ -60,7 +63,11 @@ $TcpTimeout = 2000       # TCP connection timeout in milliseconds
 $OutputFile = "network_measurement_results.csv"
 $ContinuousMode = $true  # Run continuously
 $TestInterval = 300      # Interval between test cycles in seconds (5 minutes)
+$EnableTraceroute = $false  # Enable hop-by-hop traceroute (optional, increases test time)
+$TracerouteMaxHops = 30  # Maximum number of hops for traceroute
 ```
+
+**Note:** Traceroute is disabled by default to minimize test time. Set `$EnableTraceroute = $true` to enable hop-by-hop network path analysis.
 
 #### MacOS / Linux (Bash)
 
@@ -81,6 +88,11 @@ TCP_TIMEOUT=2                   # TCP connection timeout in seconds
 OUTPUT_FILE="network_measurement_results.csv"
 CONTINUOUS_MODE=true            # Run continuously
 TEST_INTERVAL=300               # Interval between test cycles in seconds (5 minutes)
+ENABLE_TRACEROUTE=false         # Enable hop-by-hop traceroute (optional, increases test time)
+TRACEROUTE_MAX_HOPS=30          # Maximum number of hops for traceroute
+```
+
+**Note:** Traceroute is disabled by default to minimize test time. Set `ENABLE_TRACEROUTE=true` to enable hop-by-hop network path analysis.
 ```
 
 Each entry requires:
@@ -147,6 +159,9 @@ The script creates a CSV file named `network_measurement_results.csv` in the sam
 - **PacketsReceived** - Number of packets received
 - **PortOpen** - Port reachable (True/False)
 - **TcpConnectionTime_ms** - TCP connection time in ms
+- **TracerouteStatus** - Traceroute result status (Success/Failed/Disabled) - only when traceroute enabled
+- **TracerouteHops** - Number of network hops to target - only when traceroute enabled
+- **TracerouteDetails** - Hop-by-hop path details (format: Hop1:host(ip)=latency;Hop2:...) - only when traceroute enabled
 
 ## Connection Quality Reference
 
@@ -188,6 +203,15 @@ You can change the output file name:
 $OutputFile = "network_measurement_results.csv"
 ```
 
+You can enable/disable traceroute and set maximum hops:
+
+```powershell
+$EnableTraceroute = $true   # Enable hop-by-hop path analysis
+$TracerouteMaxHops = 30     # Maximum number of hops
+```
+
+**Note:** Enabling traceroute will significantly increase test time (30-60 seconds per target depending on hops and timeouts).
+
 ### MacOS / Linux (Bash)
 
 You can change the number of pings:
@@ -214,6 +238,15 @@ You can change the output file name:
 ```bash
 OUTPUT_FILE="network_measurement_results.csv"
 ```
+
+You can enable/disable traceroute and set maximum hops:
+
+```bash
+ENABLE_TRACEROUTE=true      # Enable hop-by-hop path analysis
+TRACEROUTE_MAX_HOPS=30      # Maximum number of hops
+```
+
+**Note:** Enabling traceroute will significantly increase test time (30-60 seconds per target depending on hops and timeouts).
 
 ## Protocol Selection
 
@@ -289,6 +322,7 @@ The script uses the following built-in Windows tools and APIs:
 - `Test-Connection` - For ICMP pings
 - `System.Net.Dns` - For DNS resolution
 - `System.Net.Sockets.TcpClient` - For port testing and TCP latency
+- `Test-NetConnection -TraceRoute` or `tracert.exe` - For hop-by-hop traceroute
 - `Export-Csv` - For CSV export
 
 ### MacOS / Linux (Bash)
@@ -297,11 +331,12 @@ The script uses the following standard Unix tools:
 
 - `ping` - For ICMP echo requests (compatible with both MacOS and Linux)
 - `dig` or `host` - For DNS resolution timing
-- `/dev/tcp` - For TCP connection testing (Bash built-in)
+- `/dev/tcp` or `nc` (netcat) - For TCP connection testing
+- `traceroute` (macOS) or `tracepath` (Linux) - For hop-by-hop traceroute
 - `timeout` - For connection timeouts
 - `date`, `awk`, `sed`, `bc` - For calculations and data processing
 
-All measurements are performed without external tools or dependencies.
+All measurements are performed using native OS tools without external dependencies.
 
 ### Performance & Security
 
