@@ -61,12 +61,28 @@ This specification covers both the PowerShell (Windows) and Bash (MacOS/Linux) i
 - **Method**: TCP connection establishment test
 - **Tool**: 
   - Windows: `System.Net.Sockets.TcpClient`
-  - MacOS/Linux: Bash `/dev/tcp` pseudo-device
+  - MacOS/Linux: Bash `/dev/tcp` pseudo-device or `nc` (netcat)
 - **Measurements**:
   - Port reachability (boolean)
   - TCP connection establishment time
 - **Timeout**: Configurable (default 2000 ms for Windows, 2 seconds for MacOS/Linux)
 - **Unit**: Milliseconds (ms)
+
+### 6. Traceroute (Hop-by-Hop Path Analysis)
+- **Method**: Network path trace showing each router/hop between source and destination
+- **Tool**:
+  - Windows: `Test-NetConnection -TraceRoute` (PowerShell 4.0+) or `tracert.exe` (fallback)
+  - MacOS: `traceroute` (native BSD tool)
+  - Linux: `tracepath` (iputils package, usually pre-installed) or `traceroute` (if available)
+- **Measurements**:
+  - Number of hops to destination
+  - IP address and hostname (if resolvable) for each hop
+  - Latency to each hop (when available)
+- **Configuration**: 
+  - Optional (disabled by default to minimize test time)
+  - Maximum hops configurable (default 30)
+- **Timeout**: 60 seconds total per target
+- **Note**: No administrator privileges required; uses UDP (Linux/Mac) or ICMP Echo (Windows)
 
 ## Connection Quality Reference
 
@@ -141,6 +157,7 @@ You can interpret the values yourself using common benchmarks:
 | ICMP Ping | `Test-Connection` cmdlet | `ping` command |
 | DNS Resolution | `.NET System.Net.Dns` | `dig` or `host` command |
 | TCP Connection | `.NET TcpClient` | `nc` (netcat) or Bash `/dev/tcp` pseudo-device |
+| Traceroute | `Test-NetConnection -TraceRoute` or `tracert.exe` | `traceroute` (macOS) or `tracepath` (Linux) |
 | Timeout | Built into .NET methods | `timeout` command wrapper |
 | Time Measurement | `.NET Stopwatch` | `date +%s%3N` (milliseconds) |
 | CSV Export | `Export-Csv` cmdlet with backward compatibility | Standard output redirection |
@@ -151,8 +168,9 @@ You can interpret the values yourself using common benchmarks:
 2. **For each target**:
    a. DNS resolution (if hostname)
    b. Latency measurement (4 pings by default)
-   c. Port connectivity test
-   d. Store results in object
+   c. Port connectivity test (protocol-dependent)
+   d. Traceroute/path analysis (optional)
+   e. Store results in object
 3. **Export**: Write all results to CSV
 4. **Display**: Show summary table in console
 
@@ -176,6 +194,11 @@ All measurements are exported with the following columns:
 - `PacketsReceived`: Total packets received
 - `PortOpen`: Port accessibility (True/False)
 - `TcpConnectionTime_ms`: Time to establish TCP connection
+- `TracerouteStatus`: Traceroute result (Success/Failed/Disabled) - only when enabled
+- `TracerouteHops`: Number of network hops - only when enabled
+- `TracerouteDetails`: Hop-by-hop path details (format: Hop1:host(ip)=latency;Hop2:...) - only when enabled
+
+**Note:** The CSV format is backward compatible. When traceroute is disabled, these columns are omitted. When enabled, they are appended to existing columns.
 
 ## Configuration Options
 
@@ -200,6 +223,10 @@ $TcpTimeout = 2000
 
 # Output CSV filename
 $OutputFile = "network_measurement_results.csv"
+
+# Traceroute settings (optional)
+$EnableTraceroute = $false  # Enable hop-by-hop path analysis
+$TracerouteMaxHops = 30     # Maximum number of hops
 ```
 
 ### MacOS / Linux (Bash)
@@ -227,6 +254,10 @@ OUTPUT_FILE="network_measurement_results.csv"
 # Continuous mode settings
 CONTINUOUS_MODE=true
 TEST_INTERVAL=300
+
+# Traceroute settings (optional)
+ENABLE_TRACEROUTE=false     # Enable hop-by-hop path analysis
+TRACEROUTE_MAX_HOPS=30      # Maximum number of hops
 ```
 
 ## Compatibility
@@ -306,6 +337,7 @@ Typical execution time:
 5. **Gaming Server Selection**: Find servers with lowest latency and jitter
 6. **Remote Work**: Verify connection quality for video conferencing and remote desktop
 7. **Documentation**: Generate reports for IT support or ISP complaints
+8. **Network Path Analysis**: Use traceroute to identify routing issues, locate bottlenecks, or trace packet paths through intermediate routers
 
 ## Future Enhancement Possibilities
 
@@ -315,5 +347,6 @@ Typical execution time:
 - Automated scheduling via Task Scheduler
 - Email alerts for poor quality
 - Multiple protocol support (UDP, HTTP)
-- MTR-like path analysis
+- ~~MTR-like path analysis~~ **✅ Implemented as optional traceroute**
 - Bandwidth testing (requires external tools)
+- Traceroute with packet loss per hop (requires additional tooling)
