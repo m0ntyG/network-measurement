@@ -19,6 +19,8 @@ $TcpTimeout = 2000       # TCP connection timeout in milliseconds (reduced for p
 $OutputFile = "network_measurement_results.csv"
 $ContinuousMode = $true  # Run continuously
 $TestInterval = 300      # Interval between test cycles in seconds (5 minutes)
+$EnableTraceroute = $false  # Enable hop-by-hop traceroute (optional, increases test time)
+$TracerouteMaxHops = 30  # Maximum number of hops for traceroute
 #endregion
 
 #region Helper Functions
@@ -354,6 +356,123 @@ function Test-PortConnectivity {
         }
     }
 }
+
+function Measure-Traceroute {
+    param(
+        [string]$Target,
+        [int]$MaxHops = 30
+    )
+    
+    Write-Host "  Performing traceroute (max $MaxHops hops)..." -ForegroundColor Cyan
+    
+    try {
+        # Use Test-NetConnection with TraceRoute parameter (available in PowerShell 4.0+)
+        # This is the modern way, but falls back to tracert.exe if not available
+        
+        # Try Test-NetConnection first (Windows 8.1/Server 2012 R2 and later)
+        if (Get-Command Test-NetConnection -ErrorAction SilentlyContinue) {
+            try {
+                $traceResult = Test-NetConnection -ComputerName $Target -TraceRoute -Hops $MaxHops -WarningAction SilentlyContinue -ErrorAction Stop
+                
+                if ($traceResult.TraceRoute) {
+                    $hopCount = $traceResult.TraceRoute.Count
+                    $hopDetails = ""
+                    
+                    for ($i = 0; $i -lt $traceResult.TraceRoute.Count; $i++) {
+                        $hopNum = $i + 1
+                        $hopIp = $traceResult.TraceRoute[$i]
+                        
+                        # Try to resolve hostname for each hop (optional, may slow down)
+                        $hopHost = $hopIp
+                        
+                        $hopDetails += "Hop$hopNum`:$hopHost($hopIp)=N/A ms;"
+                    }
+                    
+                    # Remove trailing semicolon
+                    $hopDetails = $hopDetails.TrimEnd(';')
+                    
+                    return @{
+                        Status  = "Success"
+                        Hops    = $hopCount
+                        Details = $hopDetails
+                    }
+                }
+            }
+            catch {
+                # Fall through to tracert.exe
+            }
+        }
+        
+        # Fallback to tracert.exe (native Windows tool, available on all versions)
+        $tracertOutput = & tracert -h $MaxHops -w 2000 $Target 2>&1
+        
+        if ($LASTEXITCODE -ne 0 -and $LASTEXITCODE -ne $null) {
+            return @{
+                Status  = "Failed"
+                Hops    = 0
+                Details = ""
+            }
+        }
+        
+        # Parse tracert output
+        $hopCount = 0
+        $hopDetails = ""
+        
+        foreach ($line in $tracertOutput) {
+            # Match lines like: "  1    <1 ms    <1 ms    <1 ms  router.local [192.168.1.1]"
+            # or: "  2     *        *        *     Request timed out."
+            if ($line -match '^\s+(\d+)\s+.*\[?([0-9\.]+)\]?\s*$') {
+                $hopNum = $matches[1]
+                $hopIp = $matches[2]
+                $hopCount++
+                
+                # Extract latency if available (first non-* time)
+                $latency = "N/A"
+                if ($line -match '(\d+)\s+ms') {
+                    $latency = $matches[1]
+                }
+                
+                # Extract hostname if available
+                $hopHost = $hopIp
+                if ($line -match '\s+(\S+)\s+\[') {
+                    $hopHost = $matches[1]
+                }
+                
+                $hopDetails += "Hop$hopNum`:$hopHost($hopIp)=$latency ms;"
+            }
+            elseif ($line -match '^\s+(\d+)\s+\*\s+\*\s+\*') {
+                $hopNum = $matches[1]
+                $hopCount++
+                $hopDetails += "Hop$hopNum`:*=* ms;"
+            }
+        }
+        
+        # Remove trailing semicolon
+        $hopDetails = $hopDetails.TrimEnd(';')
+        
+        if ($hopCount -eq 0) {
+            return @{
+                Status  = "Failed"
+                Hops    = 0
+                Details = ""
+            }
+        }
+        
+        return @{
+            Status  = "Success"
+            Hops    = $hopCount
+            Details = $hopDetails
+        }
+    }
+    catch {
+        Write-Host "  Traceroute failed: $($_.Exception.Message)" -ForegroundColor Red
+        return @{
+            Status  = "Failed"
+            Hops    = 0
+            Details = ""
+        }
+    }
+}
 #endregion
 
 #region Main Script
@@ -370,6 +489,12 @@ if ($ContinuousMode) {
 Write-Host "  Ping Count: $PingCount" -ForegroundColor White
 Write-Host "  Targets: $($Targets.Count)" -ForegroundColor White
 Write-Host "  Output File: $OutputFile" -ForegroundColor White
+if ($EnableTraceroute) {
+    Write-Host "  Traceroute: Enabled (max $TracerouteMaxHops hops)" -ForegroundColor White
+}
+else {
+    Write-Host "  Traceroute: Disabled" -ForegroundColor White
+}
 Write-Host ""
 
 # CSV file initialization - append mode for continuous operation
@@ -454,24 +579,66 @@ do {
             }
         }
         
+        # Traceroute (optional)
+        if ($EnableTraceroute) {
+            $tracerouteResult = Measure-Traceroute -Target $target.Host -MaxHops $TracerouteMaxHops
+            
+            Write-Host "  Traceroute Status: $($tracerouteResult.Status)" -ForegroundColor White
+            if ($tracerouteResult.Status -eq "Success") {
+                Write-Host "  Traceroute Hops: $($tracerouteResult.Hops)" -ForegroundColor White
+            }
+        }
+        else {
+            $tracerouteResult = @{
+                Status  = "Disabled"
+                Hops    = 0
+                Details = ""
+            }
+        }
+        
         # Store results
-        $results += [PSCustomObject]@{
-            Timestamp            = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
-            TargetName           = $target.Name
-            Hostname             = $target.Host
-            Port                 = if ($protocol -eq "ICMP") { "N/A" } else { $target.Port }
-            Protocol             = $protocol
-            ResolvedIP           = $dnsResult.ResolvedIP
-            DnsResolutionTime_ms = [string]::Format([System.Globalization.CultureInfo]::InvariantCulture, "{0:F0}", $dnsResult.DnsTime)
-            AvgLatency_ms        = [string]::Format([System.Globalization.CultureInfo]::InvariantCulture, "{0:F2}", $latencyResult.AvgLatency)
-            MinLatency_ms        = [string]::Format([System.Globalization.CultureInfo]::InvariantCulture, "{0:F0}", $latencyResult.MinLatency)
-            MaxLatency_ms        = [string]::Format([System.Globalization.CultureInfo]::InvariantCulture, "{0:F0}", $latencyResult.MaxLatency)
-            Jitter_ms            = [string]::Format([System.Globalization.CultureInfo]::InvariantCulture, "{0:F2}", $latencyResult.Jitter)
-            PacketLoss_percent   = [string]::Format([System.Globalization.CultureInfo]::InvariantCulture, "{0:F2}", $latencyResult.PacketLoss)
-            PacketsSent          = $latencyResult.PacketsSent
-            PacketsReceived      = $latencyResult.PacketsReceived
-            PortOpen             = $portResult.PortOpen
-            TcpConnectionTime_ms = [string]::Format([System.Globalization.CultureInfo]::InvariantCulture, "{0:F0}", $portResult.ConnectionTime)
+        if ($EnableTraceroute) {
+            $results += [PSCustomObject]@{
+                Timestamp            = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
+                TargetName           = $target.Name
+                Hostname             = $target.Host
+                Port                 = if ($protocol -eq "ICMP") { "N/A" } else { $target.Port }
+                Protocol             = $protocol
+                ResolvedIP           = $dnsResult.ResolvedIP
+                DnsResolutionTime_ms = [string]::Format([System.Globalization.CultureInfo]::InvariantCulture, "{0:F0}", $dnsResult.DnsTime)
+                AvgLatency_ms        = [string]::Format([System.Globalization.CultureInfo]::InvariantCulture, "{0:F2}", $latencyResult.AvgLatency)
+                MinLatency_ms        = [string]::Format([System.Globalization.CultureInfo]::InvariantCulture, "{0:F0}", $latencyResult.MinLatency)
+                MaxLatency_ms        = [string]::Format([System.Globalization.CultureInfo]::InvariantCulture, "{0:F0}", $latencyResult.MaxLatency)
+                Jitter_ms            = [string]::Format([System.Globalization.CultureInfo]::InvariantCulture, "{0:F2}", $latencyResult.Jitter)
+                PacketLoss_percent   = [string]::Format([System.Globalization.CultureInfo]::InvariantCulture, "{0:F2}", $latencyResult.PacketLoss)
+                PacketsSent          = $latencyResult.PacketsSent
+                PacketsReceived      = $latencyResult.PacketsReceived
+                PortOpen             = $portResult.PortOpen
+                TcpConnectionTime_ms = [string]::Format([System.Globalization.CultureInfo]::InvariantCulture, "{0:F0}", $portResult.ConnectionTime)
+                TracerouteStatus     = $tracerouteResult.Status
+                TracerouteHops       = $tracerouteResult.Hops
+                TracerouteDetails    = $tracerouteResult.Details
+            }
+        }
+        else {
+            $results += [PSCustomObject]@{
+                Timestamp            = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
+                TargetName           = $target.Name
+                Hostname             = $target.Host
+                Port                 = if ($protocol -eq "ICMP") { "N/A" } else { $target.Port }
+                Protocol             = $protocol
+                ResolvedIP           = $dnsResult.ResolvedIP
+                DnsResolutionTime_ms = [string]::Format([System.Globalization.CultureInfo]::InvariantCulture, "{0:F0}", $dnsResult.DnsTime)
+                AvgLatency_ms        = [string]::Format([System.Globalization.CultureInfo]::InvariantCulture, "{0:F2}", $latencyResult.AvgLatency)
+                MinLatency_ms        = [string]::Format([System.Globalization.CultureInfo]::InvariantCulture, "{0:F0}", $latencyResult.MinLatency)
+                MaxLatency_ms        = [string]::Format([System.Globalization.CultureInfo]::InvariantCulture, "{0:F0}", $latencyResult.MaxLatency)
+                Jitter_ms            = [string]::Format([System.Globalization.CultureInfo]::InvariantCulture, "{0:F2}", $latencyResult.Jitter)
+                PacketLoss_percent   = [string]::Format([System.Globalization.CultureInfo]::InvariantCulture, "{0:F2}", $latencyResult.PacketLoss)
+                PacketsSent          = $latencyResult.PacketsSent
+                PacketsReceived      = $latencyResult.PacketsReceived
+                PortOpen             = $portResult.PortOpen
+                TcpConnectionTime_ms = [string]::Format([System.Globalization.CultureInfo]::InvariantCulture, "{0:F0}", $portResult.ConnectionTime)
+            }
         }
         
         Write-Host ""

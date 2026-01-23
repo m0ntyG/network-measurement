@@ -22,6 +22,8 @@ TCP_TIMEOUT=2                   # TCP connection timeout in seconds
 OUTPUT_FILE="network_measurement_results.csv"
 CONTINUOUS_MODE=true            # Run continuously
 TEST_INTERVAL=300               # Interval between test cycles in seconds (5 minutes)
+ENABLE_TRACEROUTE=false         # Enable hop-by-hop traceroute (optional, increases test time)
+TRACEROUTE_MAX_HOPS=30          # Maximum number of hops for traceroute
 
 #endregion
 
@@ -96,6 +98,98 @@ measure_dns_resolution() {
     fi
     
     echo "$resolved_ip|$dns_time"
+}
+
+# Function to perform traceroute (hop-by-hop analysis)
+measure_traceroute() {
+    local target="$1"
+    local max_hops="${2:-30}"
+    
+    echo -e "${CYAN}  Performing traceroute (max $max_hops hops)...${NC}" >&2
+    
+    # Try different traceroute tools based on availability and OS
+    local traceroute_output=""
+    local traceroute_cmd=""
+    
+    # Detect which traceroute tool is available
+    # Priority: traceroute (macOS native) > tracepath (Linux iputils) > fallback
+    if [[ "$OS_TYPE" == "Darwin" ]] && command -v traceroute &> /dev/null; then
+        # macOS: Use native traceroute with ICMP (no admin needed with -I might need sudo, so use default UDP)
+        # -m for max hops, -w for wait time, -q for queries per hop
+        traceroute_cmd="traceroute -m $max_hops -w 2 -q 1"
+        traceroute_output=$(timeout 60 traceroute -m "$max_hops" -w 2 -q 1 "$target" 2>/dev/null)
+    elif command -v tracepath &> /dev/null; then
+        # Linux: Use tracepath (part of iputils, no admin needed)
+        # -m for max hops
+        traceroute_cmd="tracepath -m $max_hops"
+        traceroute_output=$(timeout 60 tracepath -m "$max_hops" "$target" 2>/dev/null)
+    elif command -v traceroute &> /dev/null; then
+        # Linux with traceroute installed: Use UDP mode (no admin needed)
+        # -m for max hops, -w for wait time, -q for queries per hop, -n for numeric output
+        traceroute_cmd="traceroute -m $max_hops -w 2 -q 1"
+        traceroute_output=$(timeout 60 traceroute -m "$max_hops" -w 2 -q 1 "$target" 2>/dev/null)
+    else
+        echo -e "${RED}  No traceroute tool available (tried: traceroute, tracepath)${NC}" >&2
+        echo "Not Available|0|"
+        return 1
+    fi
+    
+    if [[ -z "$traceroute_output" ]]; then
+        echo "Failed|0|"
+        return 1
+    fi
+    
+    # Parse traceroute output to extract hop information
+    # Format varies by tool, but generally: hop_number  hostname (ip)  latency
+    local hop_count=0
+    local hop_details=""
+    
+    if [[ "$traceroute_cmd" == *"tracepath"* ]]; then
+        # Parse tracepath output (different format)
+        # Example: " 1:  gateway (192.168.1.1)  0.123ms"
+        # Example: " 1:  no reply"
+        while IFS= read -r line; do
+            # Match successful hop with IP and latency
+            if [[ "$line" =~ ^[[:space:]]*([0-9]+):[[:space:]]+([^[:space:]]+)[[:space:]]+\(([0-9.]+)\)[[:space:]]+([0-9.]+)ms ]]; then
+                local hop_num="${BASH_REMATCH[1]}"
+                local hop_host="${BASH_REMATCH[2]}"
+                local hop_ip="${BASH_REMATCH[3]}"
+                local hop_latency="${BASH_REMATCH[4]}"
+                ((hop_count++))
+                hop_details+="Hop$hop_num:$hop_host($hop_ip)=$hop_latency ms;"
+            # Match hop with no reply (timeout)
+            elif [[ "$line" =~ ^[[:space:]]*([0-9]+):[[:space:]]+no[[:space:]]reply ]]; then
+                local hop_num="${BASH_REMATCH[1]}"
+                ((hop_count++))
+                hop_details+="Hop$hop_num:*(*):* ms;"
+            fi
+        done <<< "$traceroute_output"
+    else
+        # Parse traceroute output (standard format)
+        # Example: " 1  gateway (192.168.1.1)  0.123 ms"
+        while IFS= read -r line; do
+            # Match hop lines: number hostname (ip) time
+            if [[ "$line" =~ ^[[:space:]]*([0-9]+)[[:space:]]+([^[:space:]]+)[[:space:]]+\(([0-9.]+)\)[[:space:]]+([0-9.]+)[[:space:]]ms ]]; then
+                local hop_num="${BASH_REMATCH[1]}"
+                local hop_host="${BASH_REMATCH[2]}"
+                local hop_ip="${BASH_REMATCH[3]}"
+                local hop_latency="${BASH_REMATCH[4]}"
+                ((hop_count++))
+                hop_details+="Hop$hop_num:$hop_host($hop_ip)=$hop_latency ms;"
+            elif [[ "$line" =~ ^[[:space:]]*([0-9]+)[[:space:]]+\*[[:space:]]*\*[[:space:]]*\* ]]; then
+                # Timeout hop
+                local hop_num="${BASH_REMATCH[1]}"
+                ((hop_count++))
+                hop_details+="Hop$hop_num:*=* ms;"
+            fi
+        done <<< "$traceroute_output"
+    fi
+    
+    # Remove trailing semicolon
+    hop_details="${hop_details%;}"
+    
+    echo "Success|$hop_count|$hop_details"
+    return 0
 }
 
 # Function to measure latency using ICMP ping
@@ -290,6 +384,11 @@ fi
 echo -e "${WHITE}  Ping Count: $PING_COUNT${NC}"
 echo -e "${WHITE}  Targets: ${#TARGETS[@]}${NC}"
 echo -e "${WHITE}  Output File: $OUTPUT_FILE${NC}"
+if [[ "$ENABLE_TRACEROUTE" == "true" ]]; then
+    echo -e "${WHITE}  Traceroute: Enabled (max $TRACEROUTE_MAX_HOPS hops)${NC}"
+else
+    echo -e "${WHITE}  Traceroute: Disabled${NC}"
+fi
 echo ""
 
 # CSV file initialization
@@ -316,7 +415,11 @@ while true; do
     
     # Add CSV header if file doesn't exist
     if [[ "$csv_exists" == "false" ]]; then
-        echo "Timestamp,TargetName,Hostname,Port,Protocol,ResolvedIP,DnsResolutionTime_ms,AvgLatency_ms,MinLatency_ms,MaxLatency_ms,Jitter_ms,PacketLoss_percent,PacketsSent,PacketsReceived,PortOpen,TcpConnectionTime_ms" > "$OUTPUT_FILE"
+        if [[ "$ENABLE_TRACEROUTE" == "true" ]]; then
+            echo "Timestamp,TargetName,Hostname,Port,Protocol,ResolvedIP,DnsResolutionTime_ms,AvgLatency_ms,MinLatency_ms,MaxLatency_ms,Jitter_ms,PacketLoss_percent,PacketsSent,PacketsReceived,PortOpen,TcpConnectionTime_ms,TracerouteStatus,TracerouteHops,TracerouteDetails" > "$OUTPUT_FILE"
+        else
+            echo "Timestamp,TargetName,Hostname,Port,Protocol,ResolvedIP,DnsResolutionTime_ms,AvgLatency_ms,MinLatency_ms,MaxLatency_ms,Jitter_ms,PacketLoss_percent,PacketsSent,PacketsReceived,PortOpen,TcpConnectionTime_ms" > "$OUTPUT_FILE"
+        fi
         csv_exists=true
     fi
     
@@ -389,9 +492,28 @@ while true; do
             csv_port="N/A"
         fi
         
+        # Traceroute (optional)
+        if [[ "$ENABLE_TRACEROUTE" == "true" ]]; then
+            traceroute_result=$(measure_traceroute "$host" "$TRACEROUTE_MAX_HOPS")
+            IFS='|' read -r traceroute_status traceroute_hops traceroute_details <<< "$traceroute_result"
+            
+            echo -e "${WHITE}  Traceroute Status: $traceroute_status${NC}"
+            if [[ "$traceroute_status" == "Success" ]]; then
+                echo -e "${WHITE}  Traceroute Hops: $traceroute_hops${NC}"
+            fi
+        else
+            traceroute_status="Disabled"
+            traceroute_hops="0"
+            traceroute_details=""
+        fi
+        
         # Store results
         timestamp=$(date '+%Y-%m-%d %H:%M:%S')
-        echo "$timestamp,$name,$host,$csv_port,$protocol,$resolved_ip,$dns_time,$avg_latency,$min_latency,$max_latency,$jitter,$packet_loss,$packets_sent,$packets_received,$port_open,$connection_time" >> "$temp_results"
+        if [[ "$ENABLE_TRACEROUTE" == "true" ]]; then
+            echo "$timestamp,$name,$host,$csv_port,$protocol,$resolved_ip,$dns_time,$avg_latency,$min_latency,$max_latency,$jitter,$packet_loss,$packets_sent,$packets_received,$port_open,$connection_time,$traceroute_status,$traceroute_hops,\"$traceroute_details\"" >> "$temp_results"
+        else
+            echo "$timestamp,$name,$host,$csv_port,$protocol,$resolved_ip,$dns_time,$avg_latency,$min_latency,$max_latency,$jitter,$packet_loss,$packets_sent,$packets_received,$port_open,$connection_time" >> "$temp_results"
+        fi
         
         echo ""
     done
