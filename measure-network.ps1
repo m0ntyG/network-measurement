@@ -19,7 +19,7 @@ $TcpTimeout = 2000       # TCP connection timeout in milliseconds (reduced for p
 $OutputFile = "network_measurement_results.csv"
 $ContinuousMode = $true  # Run continuously
 $TestInterval = 300      # Interval between test cycles in seconds (5 minutes)
-$EnableTraceroute = $false  # Enable hop-by-hop traceroute (optional, increases test time)
+$EnableTraceroute = $true  # Enable hop-by-hop traceroute (optional, increases test time)
 $TracerouteMaxHops = 30  # Maximum number of hops for traceroute
 #endregion
 

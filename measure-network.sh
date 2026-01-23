@@ -22,7 +22,7 @@ TCP_TIMEOUT=2                   # TCP connection timeout in seconds
 OUTPUT_FILE="network_measurement_results.csv"
 CONTINUOUS_MODE=true            # Run continuously
 TEST_INTERVAL=300               # Interval between test cycles in seconds (5 minutes)
-ENABLE_TRACEROUTE=false         # Enable hop-by-hop traceroute (optional, increases test time)
+ENABLE_TRACEROUTE=true         # Enable hop-by-hop traceroute (optional, increases test time)
 TRACEROUTE_MAX_HOPS=30          # Maximum number of hops for traceroute
 
 #endregion
